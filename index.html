@@ -1,0 +1,43 @@
+
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>합본-교화연구-2025-가을호</title>
+    <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script src="https://rawcdn.githack.com/blasten/turn.js/master/lib/turn.min.js"></script>
+    <style>
+        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #flipbook-viewport { width: 90vw; height: 80vh; display: flex; justify-content: center; align-items: center; }
+        #flipbook { width: 1000px; height: 700px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .page { background: white; }
+        .page img { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+    <div id="flipbook-viewport">
+        <div id="flipbook">
+            <div class="page shadow"><img src="pages/1.jpg"></div><div class="page shadow"><img src="pages/2.jpg"></div><div class="page shadow"><img src="pages/3.jpg"></div><div class="page shadow"><img src="pages/4.jpg"></div><div class="page shadow"><img src="pages/5.jpg"></div><div class="page shadow"><img src="pages/6.jpg"></div><div class="page shadow"><img src="pages/7.jpg"></div><div class="page shadow"><img src="pages/8.jpg"></div><div class="page shadow"><img src="pages/9.jpg"></div><div class="page shadow"><img src="pages/10.jpg"></div><div class="page shadow"><img src="pages/11.jpg"></div><div class="page shadow"><img src="pages/12.jpg"></div><div class="page shadow"><img src="pages/13.jpg"></div><div class="page shadow"><img src="pages/14.jpg"></div><div class="page shadow"><img src="pages/15.jpg"></div><div class="page shadow"><img src="pages/16.jpg"></div><div class="page shadow"><img src="pages/17.jpg"></div><div class="page shadow"><img src="pages/18.jpg"></div><div class="page shadow"><img src="pages/19.jpg"></div><div class="page shadow"><img src="pages/20.jpg"></div><div class="page shadow"><img src="pages/21.jpg"></div><div class="page shadow"><img src="pages/22.jpg"></div><div class="page shadow"><img src="pages/23.jpg"></div><div class="page shadow"><img src="pages/24.jpg"></div><div class="page shadow"><img src="pages/25.jpg"></div><div class="page shadow"><img src="pages/26.jpg"></div><div class="page shadow"><img src="pages/27.jpg"></div><div class="page shadow"><img src="pages/28.jpg"></div><div class="page shadow"><img src="pages/29.jpg"></div><div class="page shadow"><img src="pages/30.jpg"></div><div class="page shadow"><img src="pages/31.jpg"></div><div class="page shadow"><img src="pages/32.jpg"></div><div class="page shadow"><img src="pages/33.jpg"></div><div class="page shadow"><img src="pages/34.jpg"></div><div class="page shadow"><img src="pages/35.jpg"></div><div class="page shadow"><img src="pages/36.jpg"></div><div class="page shadow"><img src="pages/37.jpg"></div><div class="page shadow"><img src="pages/38.jpg"></div><div class="page shadow"><img src="pages/39.jpg"></div><div class="page shadow"><img src="pages/40.jpg"></div><div class="page shadow"><img src="pages/41.jpg"></div><div class="page shadow"><img src="pages/42.jpg"></div><div class="page shadow"><img src="pages/43.jpg"></div><div class="page shadow"><img src="pages/44.jpg"></div><div class="page shadow"><img src="pages/45.jpg"></div><div class="page shadow"><img src="pages/46.jpg"></div><div class="page shadow"><img src="pages/47.jpg"></div><div class="page shadow"><img src="pages/48.jpg"></div><div class="page shadow"><img src="pages/49.jpg"></div><div class="page shadow"><img src="pages/50.jpg"></div><div class="page shadow"><img src="pages/51.jpg"></div><div class="page shadow"><img src="pages/52.jpg"></div><div class="page shadow"><img src="pages/53.jpg"></div><div class="page shadow"><img src="pages/54.jpg"></div><div class="page shadow"><img src="pages/55.jpg"></div>
+        </div>
+    </div>
+    <script>
+        $(window).ready(function() {
+            $('#flipbook').turn({
+                width: 1000, height: 700,
+                autoCenter: true,
+                display: 'double', // 양면 보기
+                gradients: true,   // 동적 그림자
+                acceleration: true // 하드웨어 가속
+            });
+        });
+        $(window).resize(function() {
+            var w = $(window).width() * 0.9;
+            var h = (w / 1000) * 700;
+            if (w > 1000) { w = 1000; h = 700; }
+            $('#flipbook').turn('size', w, h);
+        });
+    </script>
+</body>
+</html>
+    
