@@ -1,74 +1,37 @@
-import os
-import fitz
-import shutil
-import time
 
-def show_intro():
-    print("=" * 50)
-    print("           📖 플립북 변환기 (모바일/PC 통합형)")
-    print("=" * 50)
-    print("  1. PDF 파일을 이 창으로 드래그하세요.")
-    print("  2. 엔터를 누르면 변환이 시작됩니다.")
-    print("-" * 50)
-
-def convert_to_web(pdf_path):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    app_name = os.path.splitext(os.path.basename(pdf_path))[0]
-    output_dir = os.path.join(base_dir, f"{app_name}_완성본")
-    pages_dir = os.path.join(output_dir, "pages")
-
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(pages_dir)
-
-    print(f"▶ [{app_name}] 고화질 이미지 추출 중...")
-    doc = fitz.open(pdf_path)
-    total = len(doc)
-    
-    for i in range(total):
-        page = doc.load_page(i)
-        # 선명한 화질을 위해 해상도 조절
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-        pix.save(os.path.join(pages_dir, f"{i+1}.jpg"))
-        print(f"   - 진행률: {i+1}/{total} 완료", end='\r')
-    
-    doc.close()
-
-    # 모바일/태블릿/PC 모두 대응하는 3D 양면 플립 웹 코드
-    html_content = f"""
 <!doctype html>
 <html lang="ko">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{app_name}</title>
+    <title>합본-교화연구-2025-가을호</title>
     <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
     <script src="https://rawcdn.githack.com/blasten/turn.js/master/lib/turn.min.js"></script>
     <style>
-        body {{ background: #2c2c2c; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }}
-        #viewport {{ width: 95vw; height: 90vh; display: flex; justify-content: center; align-items: center; }}
-        #flipbook {{ width: 1000px; height: 700px; }}
-        .page {{ background: white; }}
-        .page img {{ width: 100%; height: 100%; object-fit: contain; }}
+        body { background: #2c2c2c; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #viewport { width: 95vw; height: 90vh; display: flex; justify-content: center; align-items: center; }
+        #flipbook { width: 1000px; height: 700px; }
+        .page { background: white; }
+        .page img { width: 100%; height: 100%; object-fit: contain; }
         /* 제본선 그림자 */
-        .shadow {{ box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }}
+        .shadow { box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
     <div id="viewport">
         <div id="flipbook">
-            {"".join([f'<div class="page shadow"><img src="pages/{i+1}.jpg"></div>' for i in range(total)])}
+            <div class="page shadow"><img src="pages/1.jpg"></div><div class="page shadow"><img src="pages/2.jpg"></div><div class="page shadow"><img src="pages/3.jpg"></div><div class="page shadow"><img src="pages/4.jpg"></div><div class="page shadow"><img src="pages/5.jpg"></div><div class="page shadow"><img src="pages/6.jpg"></div><div class="page shadow"><img src="pages/7.jpg"></div><div class="page shadow"><img src="pages/8.jpg"></div><div class="page shadow"><img src="pages/9.jpg"></div><div class="page shadow"><img src="pages/10.jpg"></div><div class="page shadow"><img src="pages/11.jpg"></div><div class="page shadow"><img src="pages/12.jpg"></div><div class="page shadow"><img src="pages/13.jpg"></div><div class="page shadow"><img src="pages/14.jpg"></div><div class="page shadow"><img src="pages/15.jpg"></div><div class="page shadow"><img src="pages/16.jpg"></div><div class="page shadow"><img src="pages/17.jpg"></div><div class="page shadow"><img src="pages/18.jpg"></div><div class="page shadow"><img src="pages/19.jpg"></div><div class="page shadow"><img src="pages/20.jpg"></div><div class="page shadow"><img src="pages/21.jpg"></div><div class="page shadow"><img src="pages/22.jpg"></div><div class="page shadow"><img src="pages/23.jpg"></div><div class="page shadow"><img src="pages/24.jpg"></div><div class="page shadow"><img src="pages/25.jpg"></div><div class="page shadow"><img src="pages/26.jpg"></div><div class="page shadow"><img src="pages/27.jpg"></div><div class="page shadow"><img src="pages/28.jpg"></div><div class="page shadow"><img src="pages/29.jpg"></div><div class="page shadow"><img src="pages/30.jpg"></div><div class="page shadow"><img src="pages/31.jpg"></div><div class="page shadow"><img src="pages/32.jpg"></div><div class="page shadow"><img src="pages/33.jpg"></div><div class="page shadow"><img src="pages/34.jpg"></div><div class="page shadow"><img src="pages/35.jpg"></div><div class="page shadow"><img src="pages/36.jpg"></div><div class="page shadow"><img src="pages/37.jpg"></div><div class="page shadow"><img src="pages/38.jpg"></div><div class="page shadow"><img src="pages/39.jpg"></div><div class="page shadow"><img src="pages/40.jpg"></div><div class="page shadow"><img src="pages/41.jpg"></div><div class="page shadow"><img src="pages/42.jpg"></div><div class="page shadow"><img src="pages/43.jpg"></div><div class="page shadow"><img src="pages/44.jpg"></div><div class="page shadow"><img src="pages/45.jpg"></div><div class="page shadow"><img src="pages/46.jpg"></div><div class="page shadow"><img src="pages/47.jpg"></div><div class="page shadow"><img src="pages/48.jpg"></div><div class="page shadow"><img src="pages/49.jpg"></div><div class="page shadow"><img src="pages/50.jpg"></div><div class="page shadow"><img src="pages/51.jpg"></div><div class="page shadow"><img src="pages/52.jpg"></div><div class="page shadow"><img src="pages/53.jpg"></div><div class="page shadow"><img src="pages/54.jpg"></div><div class="page shadow"><img src="pages/55.jpg"></div>
         </div>
     </div>
     <script>
-        function loadApp() {{
+        function loadApp() {
             var flipbook = $('#flipbook');
             var winW = $(window).width();
             
             // 모바일인지 PC인지 판별하여 레이아웃 조정
             var displayMode = (winW < 600) ? 'single' : 'double';
             
-            flipbook.turn({{
+            flipbook.turn({
                 width: $('#viewport').width(),
                 height: $('#viewport').height(),
                 elevation: 50,
@@ -76,31 +39,17 @@ def convert_to_web(pdf_path):
                 gradients: true,
                 autoCenter: true,
                 display: displayMode // 가로가 좁은 폰에선 한장, 태블릿/PC에선 양면
-            }});
-        }}
+            });
+        }
 
         $(window).ready(loadApp);
         
-        $(window).resize(function() {{
+        $(window).resize(function() {
             var w = $('#viewport').width();
             var h = $('#viewport').height();
             $('#flipbook').turn('size', w, h);
-        }});
+        });
     </script>
 </body>
 </html>
-    """
     
-    with open(os.path.join(output_dir, "index.html"), "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    print("\\n" + "=" * 50)
-    print(f"✅ 변환 완료! '{app_name}_완성본' 폴더를 확인하세요.")
-    print("=" * 50)
-    time.sleep(3)
-
-if __name__ == "__main__":
-    show_intro()
-    file_path = input("PDF 파일 경로: ").strip('"')
-    if os.path.exists(file_path):
-        convert_to_web(file_path)
