@@ -1,7 +1,5 @@
 $(function () {
-  // ==========================================================================
   // 1. 초기 설정 및 변수 선언
-  // ==========================================================================
   const cfg = window.FLIPBOOK_CONFIG;
   const info = cfg.bookInfo;
   const $book = $("#book");
@@ -21,197 +19,122 @@ $(function () {
   let resizeTimer;
   let isBarDragging = false;
   let barStartX;
-  let uiHideTimer; // 타이머 변수 선언
+  let uiHideTimer;
 
-  // flipbook.js 상단 변수 선언부 근처에 추가
   function toggleSound(enabled) {
     isSoundEnabled = (enabled !== undefined) ? enabled : !isSoundEnabled;
     const icon = isSoundEnabled ? "🔊" : "🔇";
     $("#btnSound, #m-btnSound").text(icon);
   }
-  // 이미지 및 링크 드래그 기본 동작 방지
-    $(document).on('dragstart', 'img', function(event) {
-        event.preventDefault();
-    });
 
-    // (선택 사항) 섬네일 트랙 내에서 우클릭 방지하고 싶을 경우
-    $track.on('contextmenu', function(e) { e.preventDefault(); });
+  // 기본 동작 방지
+  $(document).on('dragstart', 'img', e => e.preventDefault());
+  $track.on('contextmenu', e => e.preventDefault());
+
   if (info.title) document.title = info.title;
   $slider.attr("max", info.totalPages);
 
-  // ==========================================================================
-  // 2. 모바일 UI 토글 로직 (터치 반응성 및 스와이프 구분 강화)
-  // ==========================================================================
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchStartTime = 0;
+  // 2. 모바일 UI 토글 및 전체화면 로직
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 
   $viewport.on("touchstart", function (e) {
-      const touch = e.originalEvent.touches[0];
-      touchStartX = touch.pageX;
-      touchStartY = touch.pageY;
-      touchStartTime = Date.now();
-      
-      // 슬라이더나 버튼 조작 시 자동 숨김 타이머 중단
-      if ($(e.target).closest("button, .slider-container, #thumb-panel").length) {
-          clearTimeout(uiHideTimer);
-      }
+    const touch = e.originalEvent.touches[0];
+    touchStartX = touch.pageX;
+    touchStartY = touch.pageY;
+    touchStartTime = Date.now();
+    if ($(e.target).closest("button, .slider-container, #thumb-panel").length) {
+      clearTimeout(uiHideTimer);
+    }
   });
 
   $viewport.on("touchend", function (e) {
-      const touch = e.originalEvent.changedTouches[0];
-      const distX = Math.abs(touch.pageX - touchStartX);
-      const distY = Math.abs(touch.pageY - touchStartY);
-      const duration = Date.now() - touchStartTime;
+    const touch = e.originalEvent.changedTouches[0];
+    const distX = Math.abs(touch.pageX - touchStartX);
+    const distY = Math.abs(touch.pageY - touchStartY);
+    const duration = Date.now() - touchStartTime;
 
-      // 1. 단순 클릭(탭) 판단 조건: 
-      // 움직임이 적고(10px 미만), 터치 시간이 짧을 때(300ms 미만)
-      if (distX < 10 && distY < 10 && duration < 300) {
-          
-          // 확대 중이거나 UI 요소를 직접 클릭했을 때는 무시
-          if (window.isZoomed && window.isZoomed()) return;
-          if ($(e.target).closest("#mobile-header, button, #thumb-panel, .modal-content, .slider-container").length) return;
-          if (isMobile && !document.fullscreenElement) {
-            const docElm = document.documentElement;
-            if (docElm.requestFullscreen) docElm.requestFullscreen();
-            else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen(); // Safari/iOS 대응
-            else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+    // 단순 클릭(탭) 판단
+    if (distX < 10 && distY < 10 && duration < 300) {
+      if (window.isZoomed && window.isZoomed()) return;
+      if ($(e.target).closest("#mobile-header, button, #thumb-panel, .modal-content, .slider-container").length) return;
+
+      if (isMobile) {
+        const $mobileUI = $("#mobile-header, #ui-footer");
+        const isActive = $mobileUI.hasClass("active");
+
+        if (isActive) {
+          $mobileUI.removeClass("active");
+          $("#thumb-panel").removeClass("open");
+          clearTimeout(uiHideTimer);
+        } else {
+          $mobileUI.addClass("active");
+          clearTimeout(uiHideTimer);
+          uiHideTimer = setTimeout(() => {
+            if (!$("#thumb-panel").hasClass("open")) $mobileUI.removeClass("active");
+          }, 5000);
         }
-          if (isMobile) {
-              const $mobileUI = $("#mobile-header, #ui-footer");
-              const isActive = $mobileUI.hasClass("active");
-
-              if (isActive) {
-                  // 닫기 로직
-                  $mobileUI.removeClass("active");
-                  $("#thumb-panel").removeClass("open");
-                  clearTimeout(uiHideTimer);
-              } else {
-                  // 열기 로직
-                  $mobileUI.addClass("active");
-                  
-                  // 열린 후 다시 자동 숨김 타이머 작동 (선택 사항)
-                  clearTimeout(uiHideTimer);
-                  uiHideTimer = setTimeout(() => {
-                      if (!$("#thumb-panel").hasClass("open")) {
-                          $mobileUI.removeClass("active");
-                      }
-                  }, 5000); // 5초 후 자동 숨김
-              }
-          }
       }
-  });
-
-  // 슬라이더 조작 시 부모 뷰포트로 이벤트 전달 방지 (기존 유지)
-  $slider.on("mousedown touchstart", function(e) {
-      e.stopPropagation();
-      clearTimeout(uiHideTimer); 
-  });
-
-  // 페이지 이동 후 자동 숨김 로직 (사용자 편의에 따라 유지 또는 삭제 가능)
-  $book.bind("turned", function(event, page, view) {
-    if (isMobile && $(".mobile-ui").hasClass("active")) {
-        clearTimeout(uiHideTimer); // [추가] 타이머 중복 실행 방지
-        uiHideTimer = setTimeout(() => {
-            // 목차 패널이 열려있지 않을 때만 자동으로 숨김
-            if (!$("#thumb-panel").hasClass("open")) {
-                $(".mobile-ui, #ui-footer").removeClass("active");
-                $("#thumb-panel").removeClass("open");
-            }
-        }, 3000); 
     }
-    // ... (상단 진행바 업데이트 등 기존 로직 유지)
   });
-// 페이지 이동 시 상단 진행바 업데이트 함수
-function updateTopProgressBar(page) {
-    const total = window.FLIPBOOK_CONFIG.bookInfo.totalPages;
-    // 첫 페이지는 0%, 마지막 페이지는 100%가 되도록 계산
+
+  // 3. 기능 함수
+  function updateTopProgressBar(page) {
+    const total = info.totalPages;
     const percent = ((page - 1) / (total - 1)) * 100;
     $("#top-progress-fill").css("width", percent + "%");
-}
-  // ==========================================================================
-  // 3. 기능 함수
-  // ==========================================================================
-function loadPageImage(page) {
+  }
+
+  function loadPageImage(page) {
     if (page < 1 || page > info.totalPages) return;
     const $page = $book.find(".p" + page);
     if ($page.length && !$page.data("loaded")) {
-        const num = String(page).padStart(3, "0");
-        const imgUrl = `${info.basePath}page-${num}.${info.imageType}`;
-        
-        // 미리 로드 후 투명하게 나타나게 하면 더 부드럽습니다.
-        const img = new Image();
-        img.src = imgUrl;
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "contain";
-        img.style.opacity = "0"; // 초기 투명
-        img.style.transition = "opacity 0.3s";
-
-        img.onload = function() {
-            $page.empty().append(img);
-            img.style.opacity = "1"; // 로드 완료 시 표시
-            $page.data("loaded", true);
-        };
+      const num = String(page).padStart(3, "0");
+      const imgUrl = `${info.basePath}page-${num}.${info.imageType}`;
+      const img = new Image();
+      img.src = imgUrl;
+      $(img).css({ width: "100%", height: "100%", objectFit: "contain", opacity: "0", transition: "opacity 0.3s" });
+      img.onload = function() {
+        $page.empty().append(img);
+        setTimeout(() => img.style.opacity = "1", 10);
+        $page.data("loaded", true);
+      };
     }
-}
-$('img').on('dragstart', function() { return false; });
+  }
 
+// [교정] updateBookSize 함수 내부 로직 수정
 function updateBookSize() {
-  // [1] 가용 뷰포트 크기 측정 (주소창/툴바 제외한 순수 영역)
+  // 뷰포트 크기를 기준으로 하되, UI 영역을 제외한 가용 높이 계산
   const winW = window.innerWidth;
   const winH = window.innerHeight;
+  const vW = winW * 0.92; // 좌우 4%씩 여유
+  const vH = winH - (isMobile ? 120 : 160); // 모바일/PC UI 높이 제외
   
-  // [2] 메뉴(헤더/푸터)가 차지하는 공간(약 140px)을 수치에서 미리 제외
-  // 이렇게 하면 메뉴가 나타나도 책이 메뉴 아래로 깔리지 않습니다.
-// updateBookSize 함수 내 reservedHeight 계산 부분
-// 전체 화면 모드일 때는 메뉴 높이만 고려하여 여백을 더 줄입니다.
-  const isFS = document.fullscreenElement || document.webkitFullscreenElement;
-  const reservedHeight = (winW < 1024) ? (isFS ? 100 : 140) : 100;
-  const availableWidth = winW * 0.96; // 좌우 여백 4%
-  const availableHeight = winH - reservedHeight;
+  const isDouble = winW >= 1024 || winW > winH;
+  const mode = isDouble ? "double" : "single";
+  const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  // [3] 모드 판정 (세로 모드 무조건 1페이지 고정)
-  let mode = (winW > winH && winW >= 1000) ? "double" : "single";
-  const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
-
-  // [4] 제외된 여백 안에서 최대 책 크기 계산
   let w, h;
-  if (availableWidth / availableHeight > targetRatio) {
-      h = availableHeight; 
-      w = h * targetRatio;
+  if (vW / vH > targetRatio) {
+      h = vH; w = h * targetRatio;
   } else {
-      w = availableWidth; 
-      h = w / targetRatio;
+      w = vW; h = w / targetRatio;
   }
 
   const finalW = Math.floor(w);
   const finalH = Math.floor(h);
 
-  // [5] 적용 및 정중앙 배치 (CSS 좌표 강제 고정)
   if ($book.data("done")) {
-      if ($book.turn("display") !== mode) {
-          $book.turn("display", mode);
-      }
+      if ($book.turn("display") !== mode) $book.turn("display", mode);
       $book.turn("size", finalW, finalH);
       
-      // 물리적으로 화면 정중앙에 고정 (삼성 인터넷/사파리 공통 대응)
+      // 중앙 정렬 좌표 강제 적용
       $book.css({
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          marginLeft: -(finalW / 2) + 'px',
-          marginTop: -(finalH / 2) + 'px',
-          transition: 'none'
+          marginLeft: -(finalW / 2) + "px",
+          marginTop: -(finalH / 2) + "px"
       });
-      
-      $book.turn("center"); 
+      $book.turn("center");
   } else {
-      $book.css({
-          width: finalW, height: finalH,
-          position: 'absolute', left: '50%', top: '50%',
-          marginLeft: -(finalW / 2) + 'px', marginTop: -(finalH / 2) + 'px'
-      });
+      $book.css({ width: finalW, height: finalH });
   }
 }
 
@@ -226,7 +149,6 @@ function updateBookSize() {
             <div class="thumb-overlay">${label}P</div>
           </div>
         </div>`);
-      
       thumb.on("click", (e) => {
         e.stopPropagation();
         $book.turn("page", i);
@@ -234,16 +156,7 @@ function updateBookSize() {
       });
       $track.append(thumb);
     }
-    setTimeout(() => {
-      const scrollWidth = $track[0].scrollWidth;
-      const visibleWidth = $track.outerWidth();
-      if (scrollWidth > visibleWidth) {
-        let barWidth = (visibleWidth / scrollWidth) * $scrollContainer.width();
-        $scrollbar.css("width", Math.max(30, barWidth) + "px").show();
-      } else {
-        $scrollbar.hide();
-      }
-    }, 500);
+    setTimeout(updateScrollbarPosition, 500);
   }
 
   function syncThumbnailScroll() {
@@ -254,35 +167,41 @@ function updateBookSize() {
       $(".thumb-item").removeClass("active");
       $activeThumb.addClass("active");
       const scrollPos = $activeThumb.position().left + $track.scrollLeft() - ($track.width() / 2) + ($activeThumb.width() / 2);
-      $track.stop().animate({ scrollLeft: scrollPos }, {
-        duration: 300, step: updateScrollbarPosition
-      });
+      $track.stop().animate({ scrollLeft: scrollPos }, 300);
     }
   }
 
   function updateScrollbarPosition() {
-    if (isMobile) return;
     const maxScroll = $track[0].scrollWidth - $track[0].clientWidth;
-    if (maxScroll <= 0) return;
+    if (maxScroll <= 0) { $scrollbar.hide(); return; }
+    $scrollbar.show();
     const currentPercent = $track.scrollLeft() / maxScroll;
     const maxBarLeft = $scrollContainer.width() - $scrollbar.width();
     $scrollbar.css("left", (currentPercent * maxBarLeft) + "px");
   }
+
   function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
+    const doc = document.documentElement;
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    if (!isFS) {
+      if (doc.requestFullscreen) doc.requestFullscreen();
+      else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+      else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
     }
-}
-  // ==========================================================================
-  // 4. 플립북 초기화 및 로드
-  // ==========================================================================
-  for (let i = 1; i <= info.totalPages; i++) {
-    $book.append($('<div />', { class: 'page p' + i }));
   }
+
+  function handleFSChange() {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    $("#m-btnFull").text(isFS ? "❌" : "⛶");
+    setTimeout(updateBookSize, 200);
+  }
+
+  // 4. 초기화
+  for (let i = 1; i <= info.totalPages; i++) $book.append($('<div />', { class: 'page p' + i }));
 
   const coverImg = new Image();
   coverImg.src = `${info.basePath}page-001.${info.imageType}`;
@@ -290,145 +209,61 @@ function updateBookSize() {
     imgRatio = coverImg.width / coverImg.height;
     updateBookSize();
 
- $book.turn({
-    pages: info.totalPages,
-    elevation: cfg.flip.elevation,
-    duration: cfg.flip.duration,
-    gradients: cfg.flip.gradients,
-    autoCenter: cfg.flip.autoCenter,
-    acceleration: !isMobile,
-    when: {
-        // 페이지가 넘어가는 중일 때
+    $book.turn({
+      pages: info.totalPages,
+      elevation: cfg.flip.elevation,
+      duration: cfg.flip.duration,
+      gradients: cfg.flip.gradients,
+      autoCenter: cfg.flip.autoCenter,
+      acceleration: !isMobile,
+      when: {
         turning: (e, page, view) => {
-            if (window.isZoomed && window.isZoomed()) { 
-                e.preventDefault(); 
-                return; 
-            }
-            // 현재 전환되는 페이지들 미리 로드
-            view.forEach(p => loadPageImage(p));
+          if (window.isZoomed && window.isZoomed()) { e.preventDefault(); return; }
+          view.forEach(p => loadPageImage(p));
         },
-        // 페이지 이동이 완료되었을 때
         turned: (e, page, view) => {
-            // [중요] 점프 이동 시 누락된 이미지를 확실히 로드하기 위해 view 활용
-            clearTimeout(uiHideTimer);
-            view.forEach(p => {
-                if (p > 0) loadPageImage(p); 
-            });
+          view.forEach(p => { if (p > 0) loadPageImage(p); });
+          for(let i = page - 2; i <= page + 2; i++) if(i > 0 && i <= info.totalPages) loadPageImage(i);
+          
+          $label.text(`${page} / ${info.totalPages}`);
+          $("#m-page-label").text(`${page} / ${info.totalPages}`);
+          $slider.val(page);
+          syncThumbnailScroll();
 
-            // UI 업데이트 (라벨 및 슬라이더)
-            $label.text(`${page} / ${info.totalPages}`);
-            $("#m-page-label").text(`${page} / ${info.totalPages}`);
-            $slider.val(page);
-            
-            // 목차 스크롤 동기화
-            syncThumbnailScroll();
-
-            // 효과음 재생
-            if (isSoundEnabled) {
-                const audio = document.getElementById("audio-flip");
-                if (audio) { 
-                    audio.currentTime = 0; 
-                    audio.play().catch(() => {}); 
-                }
-            }
-            updateTopProgressBar(page); // 상단 진행바 업데이트 호출
+          if (isSoundEnabled) {
+            const audio = document.getElementById("audio-flip");
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+          }
+          updateTopProgressBar(page);
         }
-    }
-});
-
-// 초기 배치 안정화를 위한 센터링
-setTimeout(() => { 
-    $book.turn("center"); 
-}, 100);
-
-    $("#m-btnHelp").on("click", function(e) {
-        e.stopPropagation();
-        $("#help-modal").addClass("open");
-    });
-
-    $("#m-btnThumb").on("click", function(e) {
-        e.stopPropagation();
-        $("#thumb-panel").toggleClass("open");
+      }
     });
 
     $book.data("done", true);
     $("#loading-overlay").fadeOut(300);
     [1, 2, 3].forEach(p => loadPageImage(p));
     buildThumbnails();
+    setTimeout(() => $book.turn("center"), 100);
   };
 
-  // ==========================================================================
-  // 5. 공통 UI 핸들러
-  // ==========================================================================
-// 이 코드 하나로 PC와 모바일 소리 버튼을 모두 제어합니다.
-  $("#btnSound, #m-btnSound").on("click", function(e) {
-    e.stopPropagation();
-    toggleSound();
-  });
-  $("#btnAnim").on("click", function (e) {
+  // 5. 이벤트 핸들러
+  $("#btnSound, #m-btnSound").on("click", e => { e.stopPropagation(); toggleSound(); });
+  $("#btnAnim").on("click", function(e) {
     e.stopPropagation();
     isAnimEnabled = !isAnimEnabled;
     $(this).text(isAnimEnabled ? "✨" : "⚡");
-    $book.turn("options", { 
-        duration: isAnimEnabled ? cfg.flip.duration : 200, gradients: isAnimEnabled
-    });
+    $book.turn("options", { duration: isAnimEnabled ? cfg.flip.duration : 200, gradients: isAnimEnabled });
   });
-  $("#m-btnFull").on("click", function(e) {
-    e.stopPropagation();
-    toggleFullScreen();
-});
-function toggleFullScreen() {
-  if (!document.fullscreenElement && 
-      !document.webkitFullscreenElement && 
-      !document.msFullscreenElement) {
-      // 전체 화면 진입
-      const docElm = document.documentElement;
-      if (docElm.requestFullscreen) docElm.requestFullscreen();
-      else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-      else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
-      
-      $("#m-btnFull").text("❌"); // 닫기 아이콘으로 변경
-  } else {
-      // 전체 화면 해제
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.msExitFullscreen) document.msExitFullscreen();
-      
-      $("#m-btnFull").text("⛶"); // 기본 아이콘으로 복구
-  }
-}
-
-// 브라우저의 'ESC'키 등으로 전체화면이 해제될 때 아이콘 동기화
-document.addEventListener("fullscreenchange", handleFSChange);
-document.addEventListener("webkitfullscreenchange", handleFSChange);
-document.addEventListener("msfullscreenchange", handleFSChange);
-// 초기 로드 시 실행
-if (isMobile && !document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) {
-  $("#m-btnFull").hide(); // 전체 화면을 지원하지 않는 브라우저(일부 iOS)에서 버튼 숨김
-}
-function handleFSChange() {
-  const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-  $("#m-btnFull").text(isFS ? "❌" : "⛶");
+  $("#m-btnFull").on("click", e => { e.stopPropagation(); toggleFullScreen(); });
+  document.addEventListener("fullscreenchange", handleFSChange);
+  document.addEventListener("webkitfullscreenchange", handleFSChange);
   
-  // 전체 화면 상태가 바뀔 때 책 크기를 재계산하여 레이아웃 깨짐 방지
-  if (typeof updateBookSize === "function") {
-      setTimeout(updateBookSize, 150);
-  }
-}
-  $("#thumb-toggle").on("click", (e) => {
-    e.stopPropagation();
-    $("#thumb-panel").toggleClass("open");
-  });
+  $("#m-btnHelp, #btnHelp").on("click", e => { e.stopPropagation(); $("#help-modal").addClass("open"); });
+  $("#btnCloseHelp, .modal-overlay").on("click", e => { if (e.target.id === "btnCloseHelp" || $(e.target).hasClass("modal-overlay")) $(".modal-overlay").removeClass("open"); });
 
+  $("#thumb-toggle, #m-btnThumb").on("click", e => { e.stopPropagation(); $("#thumb-panel").toggleClass("open"); });
   $("#btnPrev").on("click", () => $book.turn("previous"));
   $("#btnNext").on("click", () => $book.turn("next"));
-
-  $("#btnHelp").on("click", () => $("#help-modal").addClass("open"));
-  $("#btnCloseHelp, .modal-overlay").on("click", (e) => {
-    if (e.target.id === "btnCloseHelp" || $(e.target).hasClass("modal-overlay")) {
-      $(".modal-overlay").removeClass("open");
-    }
-  });
 
   $slider.on("input", function () {
     const val = $(this).val();
@@ -438,67 +273,31 @@ function handleFSChange() {
     setTimeout(() => $tooltip.removeClass("show"), 500);
   });
 
-  $viewport.on("wheel", function (e) {
-    if (window.isZoomed && window.isZoomed()) return;
-    if (e.originalEvent.deltaY > 0) $book.turn("next");
-    else $book.turn("previous");
+  $track.on("scroll", updateScrollbarPosition);
+  $scrollbar.on("mousedown", function(e) {
+    isBarDragging = true;
+    barStartX = e.pageX - $scrollbar.position().left;
+    $("body").addClass("dragging");
     e.preventDefault();
   });
 
-  $(document).on("keydown", (e) => {
-    if (window.isZoomed && window.isZoomed() || e.target.tagName === "INPUT") return;
-    switch (e.keyCode) {
-      case 37: $book.turn("previous"); break;
-      case 39: $book.turn("next"); break;
-      case 38: $book.turn("page", 1); break;
-      case 40: $book.turn("page", info.totalPages); break;
-    }
-  });
-
-  // 섬네일 드래그 로직 생략 (기존 코드 유지)
-  // ==========================================================================
-  // 6. 섬네일 드래그 및 스크롤 로직
-  // ==========================================================================
-  
-  // 트랙 자체의 스크롤 변화 감지하여 커스텀 스크롤바 위치 동기화
-  $track.on("scroll", updateScrollbarPosition);
-
-  // 스크롤바 드래그 로직 (PC)
-  $scrollbar.on("mousedown", function(e) {
-      isBarDragging = true;
-      barStartX = e.pageX - $scrollbar.position().left;
-      $("body").addClass("dragging"); // 드래그 중 커서 유지용
-      e.preventDefault();
-  });
-
   $(document).on("mousemove", function(e) {
-      if (!isBarDragging) return;
-      
-      const containerWidth = $scrollContainer.width();
-      const barWidth = $scrollbar.width();
-      let newLeft = e.pageX - barStartX;
-      
-      // 범위 제한
-      newLeft = Math.max(0, Math.min(newLeft, containerWidth - barWidth));
-      $scrollbar.css("left", newLeft + "px");
-      
-      // 트랙 스크롤 연동
-      const scrollPercent = newLeft / (containerWidth - barWidth);
-      const scrollTarget = scrollPercent * ($track[0].scrollWidth - $track[0].clientWidth);
-      $track.scrollLeft(scrollTarget);
-  }).on("mouseup", function() {
-      if (isBarDragging) {
-          isBarDragging = false;
-          $("body").removeClass("dragging");
-      }
-  });
+    if (!isBarDragging) return;
+    const containerWidth = $scrollContainer.width(), barWidth = $scrollbar.width();
+    let newLeft = Math.max(0, Math.min(e.pageX - barStartX, containerWidth - barWidth));
+    $scrollbar.css("left", newLeft + "px");
+    const scrollPercent = newLeft / (containerWidth - barWidth);
+    $track.scrollLeft(scrollPercent * ($track[0].scrollWidth - $track[0].clientWidth));
+  }).on("mouseup", () => { isBarDragging = false; $("body").removeClass("dragging"); });
 
-  // 터치 스크롤 지원 (모바일)
-  $track.on("touchstart", function() {
-      clearTimeout(uiHideTimer); // 스크롤 중에는 UI 숨기기 방지
-  });
   $(window).on("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(updateBookSize, 150);
+  });
+
+  $(document).on("keydown", (e) => {
+    if ((window.isZoomed && window.isZoomed()) || e.target.tagName === "INPUT") return;
+    if (e.keyCode === 37) $book.turn("previous");
+    else if (e.keyCode === 39) $book.turn("next");
   });
 });
