@@ -1,0 +1,324 @@
+/* 1. 기본 레이아웃 */
+body { 
+    margin: 0; padding: 0; background: #111; overflow: hidden; 
+    font-family: 'Noto Sans KR', sans-serif; user-select: none; color: #e2e2e2; 
+}
+/* 상단 진행바 컨테이너 */
+#top-progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px; /* 바 두께 */
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 11000; /* 모바일 헤더보다 위에 위치하도록 설정 */
+}
+
+/* 실제 진행도를 나타내는 바 */
+#top-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #00bcd4; /* 포인트 컬러 */
+    box-shadow: 0 0 8px rgba(0, 188, 212, 0.6);
+    transition: width 0.3s ease; /* 부드러운 움직임 */
+}
+#main-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+/* 1. 기본 레이아웃 수정 */
+#book-viewport { 
+    flex: 1; 
+    position: relative; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;     
+    background: #121213; 
+    overflow: hidden; 
+
+    /* 핵심 수정: 푸터 높이(65px~70px)만큼 바닥 여백을 추가하여 겹침 방지 */
+    padding-bottom: 70px; 
+    box-sizing: border-box; /* 패딩이 전체 높이에 포함되도록 설정 */
+}
+
+/* 2. 플립북 코어 */
+#book { 
+    margin: 0 auto !important; /* 브라우저 기본 마진 간섭 차단 */
+    display: block; 
+    will-change: transform; 
+    transform-origin: center center; 
+}
+#book .page { background-color: #fff; }
+#book img { width: 100%; height: 100%; display: block; -webkit-user-drag: none;-webkit-touch-callout: none; /* iOS 길게 누르기 메뉴 방지 */
+    pointer-events: none;        /* 이미지 자체가 터치 이벤트를 먹지 않도록 설정 */ }
+/* 책 안의 이미지와 목차 이미지 드래그 방지 */
+#book img, 
+.thumb-item img {
+    -webkit-user-drag: none; /* 크롬, 사파리 등 */
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    /* 2. 텍스트 및 이미지 선택 방지 (표준 속성 위주) */
+    user-select: none; /* 텍스트 선택 방지 */
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    /* 3. 터치 시 파란색 하이라이트 방지 (모바일용) */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 섬네일 아이템 자체도 드래그 방지 */
+.thumb-item {
+    -webkit-user-drag: none;
+    user-select: none;
+}
+/* 3. UI 푸터 - PC 컨트롤 가로 나열 */
+#ui-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #1c1c1e;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 전체 자식들을 중앙으로 */
+    padding: 0 20px env(safe-area-inset-bottom);
+    border-top: 1px solid #333;
+    z-index: 2000;
+}
+/* 푸터 내부의 각 그룹을 가로로 배치 */
+.ui-group {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 요소들 사이의 간격 */
+}
+#mobile-header {
+    display: none;
+}
+
+#page-label-spread {padding-right: 10px;}
+/* 유틸리티 버튼 세트 가로 정렬 */
+.footer-utils {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 왼쪽과 오른쪽 영역을 절대 위치처럼 배치하여 중앙 영역을 방해하지 않게 함 */
+.footer-left {
+    position: absolute;
+    left: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.footer-right {
+    position: absolute;
+    right: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+/* 메인 컨트롤 그룹을 가로로 배치 */
+.main-controls {
+    flex: 2; /* 버튼 그룹보다 슬라이더 그룹에 더 많은 공간 할당 */
+    display: flex !important;
+    flex-direction: row !important; /* 가로 나열 강제 */
+    align-items: center;
+    margin: auto;
+    gap: 15px; /* 버튼 사이 간격 */
+    max-width: 1400px; /* 너무 퍼지지 않게 제한 */
+}
+/* 활성화 상태 (Active 클래스 제어) */
+.mobile-ui.active { transform: translateY(0) !important; opacity: 1 !important; }
+#ui-footer.active { transform: translateY(0) !important; opacity: 1 !important; }
+
+/* 버튼 디자인 */
+button { 
+    height: 38px; padding: 0 15px; font-size: 14px; font-weight: 500;
+    color: #fff; background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 8px;
+    cursor: pointer; transition: 0.2s;
+}
+button:active { background: #444; transform: scale(0.96); }
+.util-btn { width: 38px; padding: 0; display: flex; justify-content: center; align-items: center; }
+
+/* 4. 슬라이더 툴팁 */
+.slider-container { flex: 1; position: relative; margin: 0 30px; max-width: 1200px; pointer-events: auto !important;}
+#page-slider { 
+    width: 100%; 
+    cursor: pointer; 
+    /* 비표준 속성 경고 해결: 표준 속성을 먼저 적고 브라우저 접두사를 추가합니다 */
+    appearance: none; 
+    -webkit-appearance: none; 
+    background: #333; 
+    height: 6px; 
+    border-radius: 3px; 
+    outline: none;
+}
+#page-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    background: #00bcd4;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+#slider-tooltip {
+    position: absolute; top: -35px; transform: translateX(-50%);
+    background: #00bcd4; color: #000; padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: bold; opacity: 0; pointer-events: none;
+}
+#slider-tooltip.show { opacity: 1; }
+/* 드래그 중 전체 화면 커서 고정 */
+body.dragging {
+    cursor: grabbing !important;
+}
+/* 5. 목차 패널 및 커스텀 스크롤바 */
+#thumb-panel {
+    position: fixed; bottom: -150px; left: 0; width: 100%; height: 130px;
+    background: rgba(15, 15, 17, 0.95); backdrop-filter: blur(15px);
+    transition: bottom 0.3s ease; z-index: 4000;
+}
+
+#thumb-panel.open { bottom: 85px !important; }
+#thumb-track { display: flex; padding: 15px; gap: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */ scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; /* 가로 방향 터치 동작 허용 */ }
+#thumb-track::-webkit-scrollbar { display: none; }
+
+#thumb-scroll-container { position: relative; width: 80%; height: 10px; background: #333; margin: 0 auto; border-radius: 2px; }
+#thumb-scrollbar { position: absolute; top: 0; width: 135px!important; left: 0; height: 100%; background: #00bcd4; border-radius: 2px;touch-action: none;
+    cursor: grab; }
+#thumb-scrollbar:active {
+    cursor: grabbing;
+}
+.thumb-item { flex: 0 0 80px; cursor: pointer; }
+.thumb-img-container { border: 2px solid #333; border-radius: 4px; overflow: hidden; position: relative; height: 100px; }
+.thumb-item.active .thumb-img-container { border-color: #00bcd4; }
+.thumb-overlay { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.6); font-size: 10px; text-align: center; }
+
+/* 6. 미디어 쿼리 (모바일 대응) */
+@media (max-width: 1023px) {
+    #top-progress-container {
+        height: 3px; /* 모바일에서는 조금 더 얇게 */
+    }
+    /* 모바일 헤더와 푸터가 동시에 제어되도록 mobile-ui 클래스 정의 */
+    .mobile-ui {
+        pointer-events: none; /* 숨겨져 있을 때는 터치 방해 금지 */
+    }
+    .mobile-ui.active { 
+        pointer-events: auto; /* 나타났을 때만 버튼 클릭 가능 */
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+    }
+    #book-viewport {
+        /* 모바일 푸터 높이와 Safe Area를 고려한 여백 */
+        padding-bottom: calc(75px + env(safe-area-inset-bottom));
+    }
+    /* index.html의 모바일 헤더 ID에 대한 초기 설정 */
+    #mobile-header {
+        display: flex !important;
+        justify-content: space-between !important; 
+        align-items: center !important;
+        position: fixed !important;
+        top: 0; left: 0; right: 0;
+        height: 60px;
+        padding: 0 15px; /* 양옆 여백 확보 */
+        z-index: 10000 !important;
+        background: rgba(28, 28, 30, 0.95);
+        border-bottom: 1px solid #333;
+        
+        /* 애니메이션 설정 */
+        transform: translateY(-100%);
+        opacity: 0;
+        transition: transform 0.4s ease, opacity 0.3s ease;
+        pointer-events: none;
+    }
+    #mobile-header.active {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important; /* 활성화 시 버튼 클릭 가능 */
+    }
+    .m-header-right .util-btn {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        font-size: 16px;
+        background: #2c2c2e;
+        border: 1px solid #444;
+    }
+    #main-container {
+        position: relative;
+        z-index: 1;
+    }
+    /* 터치 조작을 고려한 슬라이더 영역 확대 */
+    #page-slider {
+        height: 30px;
+    }
+/* 2. 푸터 위치 설정 */
+    #ui-footer {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        transform: translateY(100%); /* 화면 밖으로 숨김 */
+        opacity: 0;
+        align-items: flex-start; /* 버튼 위치 최적화 */
+        transition: transform 0.4s ease, opacity 0.3s ease;
+        z-index: 5000;
+        padding-top: 10px;
+        justify-content: center;
+        height: calc(70px + env(safe-area-inset-bottom)) !important;
+        padding: 0 15px env(safe-area-inset-bottom) 15px !important;
+        pointer-events: auto !important; /* 푸터 내부 요소 클릭 허용 */
+    }
+    /* 슬라이더 툴팁이 손가락에 가려지지 않게 위치 조정 */
+    #slider-tooltip {
+        bottom: 40px; 
+        padding: 5px;
+    }
+    .mobile-hide { display: none !important; }
+    .slider-container { 
+        display: flex !important; /* 모바일에서도 슬라이더가 보이도록 설정 */
+        flex: 1;
+        margin: 0 !important;
+        pointer-events: auto !important; /* 터치가 가능하도록 강제 */ 
+    position: relative;}
+    .main-controls { display: flex !important;
+        flex-direction: row !important; /* 가로 정렬 강제 */
+        width: 100%;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;}
+    #thumb-panel.open { bottom: 90px !important; }
+/* 3. 활성화(Active) 상태일 때 화면에 표시 */
+    #mobile-header.active,
+    #ui-footer.active {
+        transform: translateY(0)!important;
+        opacity: 1!important;
+        pointer-events: auto;
+    }
+#thumb-scroll-container {
+        display: none !important;
+    }
+/* 대신 터치 스크롤이 자연스럽게 작동하도록 설정합니다 */
+    #thumb-track {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+        padding-bottom: 20px; /* 터치 영역 확보 */
+    }
+    /* 모바일 버튼 크기 최적화 */
+    .primary-btn {
+        min-width: 45px;
+        height: 45px;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+    }
+}
+/* 로딩 애니메이션 */
+#loading-overlay { position: fixed; inset: 0; background: #111; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00bcd4; }
+.spinner { width: 40px; height: 40px; border: 4px solid rgba(0,188,212,0.2); border-top-color: #00bcd4; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9000; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-content { background: #222; padding: 25px; border-radius: 15px; max-width: 85%; color: white; }
