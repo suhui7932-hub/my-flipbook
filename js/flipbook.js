@@ -155,17 +155,25 @@ $('img').on('dragstart', function() { return false; });
 function updateBookSize() {
   const vW = $viewport.width();
   const vH = $viewport.height();
+  const winW = $(window).width();
+  const winH = $(window).height();
   
-  // [중요] 모바일 자동 변환 로직
-  // 가로가 세로보다 길고, 화면 폭이 1024px 이상일 때만 'double' 모드 적용
-  // 일반적인 스마트폰 세로 화면은 자동으로 'single' 모드가 됩니다.
-  const isDouble = $(window).width() > $(window).height() && $(window).width() >= 1024;
-  const mode = isDouble ? "double" : "single"; 
+  // [수정] 판정 로직 강화
+  // 1. 모바일 기기 체크(isMobile)가 true이면서 세로 모드(winW < winH)이면 무조건 single
+  // 2. 그 외 PC나 태블릿 가로 모드(winW > winH)이면서 폭이 충분할 때만 double
+  let mode = "single";
+  if (isMobile) {
+      mode = (winW > winH) ? "double" : "single";
+  } else {
+      mode = (winW > 1024 && winW > winH) ? "double" : "single";
+  }
+
+  const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
   let w, h;
-  // 뷰포트 대비 책의 크기 결정 (여백 조절: 0.94 -> 0.98로 키우면 더 꽉 참)
-  const paddingFactor = 0.96; 
+  // 모바일에서 더 꽉 차게 보이도록 패딩 조절 (0.96 -> 0.98)
+  const paddingFactor = isMobile ? 0.98 : 0.95; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
 
@@ -176,7 +184,7 @@ function updateBookSize() {
   }
 
   if ($book.data("done")) {
-      // [핵심] 현재 모드와 계산된 모드가 다를 경우 실시간 전환
+      // 현재 적용된 모드와 계산된 모드가 다를 때만 실시간 전환
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
