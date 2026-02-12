@@ -101,17 +101,25 @@ $(function () {
     }
   }
 
-// [교정] updateBookSize 함수 내부 로직 수정
+// [교정] 모드 전환 기준치를 768px로 조정한 updateBookSize 함수
 function updateBookSize() {
-  // 뷰포트 크기를 기준으로 하되, UI 영역을 제외한 가용 높이 계산
   const winW = window.innerWidth;
   const winH = window.innerHeight;
-  const vW = winW * 0.92; // 좌우 4%씩 여유
-  const vH = winH - (isMobile ? 120 : 160); // 모바일/PC UI 높이 제외
   
-  const isDouble = winW >= 1024 || winW > winH;
-  const mode = isDouble ? "double" : "single";
-  const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
+  // [수정] 기준치를 768px로 낮춤. 
+  // 일반적인 스마트폰 세로 모드(약 360~430px)에서는 single, 
+  // 태블릿이나 가로로 돌린 스마트폰에서는 double 모드 유도.
+  let mode;
+  if (winW < 768) {
+      mode = "single";
+  } else {
+      mode = (winW > winH) ? "double" : "single";
+  }
+  
+  const vW = winW * 0.92;
+  const vH = winH - (isMobile ? 120 : 160);
+  
+  const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
 
   let w, h;
   if (vW / vH > targetRatio) {
@@ -124,11 +132,14 @@ function updateBookSize() {
   const finalH = Math.floor(h);
 
   if ($book.data("done")) {
-      if ($book.turn("display") !== mode) $book.turn("display", mode);
+      if ($book.turn("display") !== mode) {
+          $book.turn("display", mode);
+      }
       $book.turn("size", finalW, finalH);
       
-      // 중앙 정렬 좌표 강제 적용
       $book.css({
+          left: '50%',
+          top: '48%',
           marginLeft: -(finalW / 2) + "px",
           marginTop: -(finalH / 2) + "px"
       });
