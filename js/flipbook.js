@@ -155,24 +155,27 @@ $('img').on('dragstart', function() { return false; });
 function updateBookSize() {
   const vW = $viewport.width();
   const vH = $viewport.height();
-  // Safari 및 삼성 인터넷의 가변 UI를 대응하기 위해 inner 수치 활용
+  
+  // Safari, 삼성 인터넷, 크롬 모두에서 가장 정확한 윈도우 수치 추출
   const winW = window.innerWidth;
   const winH = window.innerHeight;
   
-  // [1] 모바일 1페이지 고정 로직 강화
-  // 스마트폰(isMobile)이거나 화면이 세로로 길면(winW < winH) 무조건 1페이지(single)
-  // 가로 모드이면서 폭이 충분히 넓은(1100px 이상) 태블릿/PC 환경에서만 2페이지
+  // [강력한 판정 로직]
+  // 1. 화면이 세로로 길면(winW < winH) 이유 불문 무조건 1페이지(single)
+  // 2. 가로로 돌렸을 때(winW > winH) 중에서 화면이 아주 넓은 경우만 2페이지(double)
   let mode = "single";
-  if (winW > winH && winW >= 1100) {
-      mode = "double";
+  if (winW > winH) {
+      // 가로 모드일 때, 태블릿 급(1000px 이상)인 경우만 2페이지 허용
+      mode = (winW >= 1000) ? "double" : "single";
   } else {
-      mode = "single"; // 세로 모드 및 일반 스마트폰은 무조건 1페이지
+      // 세로 모드면 해상도 상관없이 무조건 1페이지
+      mode = "single";
   }
 
   const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  // [2] 여백 설정: 모바일일 때는 화면 끝까지 꽉 차게(0.99)
+  // 모바일 세로 모드 가독성을 위해 여백 최소화 (0.99)
   const paddingFactor = (winW < winH) ? 0.99 : 0.94; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
@@ -187,14 +190,13 @@ function updateBookSize() {
   const finalW = Math.floor(w);
   const finalH = Math.floor(h);
 
-  // [3] turn.js 적용 및 물리적 중앙 정렬 강제 (삼성/사파리 공통)
   if ($book.data("done")) {
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
       $book.turn("size", finalW, finalH);
       
-      // CSS를 이용해 화면 정중앙에 강제 배치
+      // 물리적 중앙 정렬 강제 적용 (삼성 인터넷 주소창 대응)
       $book.css({
           position: 'absolute',
           left: '50%',
