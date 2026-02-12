@@ -34,7 +34,7 @@ $(function () {
   if (info.title) document.title = info.title;
   $slider.attr("max", info.totalPages);
 
-  // 2. 모바일 UI 토글 및 전체화면 로직
+  // 2. 모바일 UI 토글 로직
   let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 
   $viewport.on("touchstart", function (e) {
@@ -53,7 +53,6 @@ $(function () {
     const distY = Math.abs(touch.pageY - touchStartY);
     const duration = Date.now() - touchStartTime;
 
-    // 단순 클릭(탭) 판단
     if (distX < 10 && distY < 10 && duration < 300) {
       if (window.isZoomed && window.isZoomed()) return;
       if ($(e.target).closest("#mobile-header, button, #thumb-panel, .modal-content, .slider-container").length) return;
@@ -101,53 +100,39 @@ $(function () {
     }
   }
 
-// [교정] 모드 전환 기준치를 768px로 조정한 updateBookSize 함수
-function updateBookSize() {
-  const winW = window.innerWidth;
-  const winH = window.innerHeight;
-  
-  // [수정] 기준치를 768px로 낮춤. 
-  // 일반적인 스마트폰 세로 모드(약 360~430px)에서는 single, 
-  // 태블릿이나 가로로 돌린 스마트폰에서는 double 모드 유도.
-  let mode;
-  if (winW < 768) {
-      mode = "single";
-  } else {
-      mode = (winW > winH) ? "double" : "single";
-  }
-  
-  const vW = winW * 0.92;
-  const vH = winH - (isMobile ? 120 : 160);
-  
-  const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
+  function updateBookSize() {
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    
+    let mode = (winW < 768) ? "single" : (winW > winH ? "double" : "single");
+    
+    const vW = winW * 0.92;
+    const vH = winH - (isMobile ? 120 : 160);
+    const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
 
-  let w, h;
-  if (vW / vH > targetRatio) {
+    let w, h;
+    if (vW / vH > targetRatio) {
       h = vH; w = h * targetRatio;
-  } else {
+    } else {
       w = vW; h = w / targetRatio;
-  }
+    }
 
-  const finalW = Math.floor(w);
-  const finalH = Math.floor(h);
+    const finalW = Math.floor(w);
+    const finalH = Math.floor(h);
 
-  if ($book.data("done")) {
-      if ($book.turn("display") !== mode) {
-          $book.turn("display", mode);
-      }
+    if ($book.data("done")) {
+      if ($book.turn("display") !== mode) $book.turn("display", mode);
       $book.turn("size", finalW, finalH);
-      
       $book.css({
-          left: '50%',
-          top: '48%',
-          marginLeft: -(finalW / 2) + "px",
-          marginTop: -(finalH / 2) + "px"
+        left: '50%', top: '48%',
+        marginLeft: -(finalW / 2) + "px",
+        marginTop: -(finalH / 2) + "px"
       });
       $book.turn("center");
-  } else {
+    } else {
       $book.css({ width: finalW, height: finalH });
+    }
   }
-}
 
   function buildThumbnails() {
     $track.empty();
@@ -193,23 +178,28 @@ function updateBookSize() {
 
   function toggleFullScreen() {
     const doc = document.documentElement;
-    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || document.mozFullScreenElement;
     if (!isFS) {
       if (doc.requestFullscreen) doc.requestFullscreen();
       else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+      else if (doc.mozRequestFullScreen) doc.mozRequestFullScreen();
       else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
     } else {
       if (document.exitFullscreen) document.exitFullscreen();
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
       else if (document.msExitFullscreen) document.msExitFullscreen();
     }
   }
 
   function handleFSChange() {
-    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || document.mozFullScreenElement;
     $("#m-btnFull").text(isFS ? "❌" : "⛶");
-    setTimeout(updateBookSize, 200);
+    setTimeout(updateBookSize, 300);
   }
+
+  const fsEvents = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"];
+  fsEvents.forEach(evt => document.addEventListener(evt, handleFSChange));
 
   // 4. 초기화
   for (let i = 1; i <= info.totalPages; i++) $book.append($('<div />', { class: 'page p' + i }));
@@ -266,9 +256,7 @@ function updateBookSize() {
     $book.turn("options", { duration: isAnimEnabled ? cfg.flip.duration : 200, gradients: isAnimEnabled });
   });
   $("#m-btnFull").on("click", e => { e.stopPropagation(); toggleFullScreen(); });
-  document.addEventListener("fullscreenchange", handleFSChange);
-  document.addEventListener("webkitfullscreenchange", handleFSChange);
-  
+
   $("#m-btnHelp, #btnHelp").on("click", e => { e.stopPropagation(); $("#help-modal").addClass("open"); });
   $("#btnCloseHelp, .modal-overlay").on("click", e => { if (e.target.id === "btnCloseHelp" || $(e.target).hasClass("modal-overlay")) $(".modal-overlay").removeClass("open"); });
 
