@@ -1,55 +1,104 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>합본-교화연구-2025-가을호</title>
-    <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
-    <script src="https://rawcdn.githack.com/blasten/turn.js/master/lib/turn.min.js"></script>
-    <style>
-        body { background: #2c2c2c; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #viewport { width: 95vw; height: 90vh; display: flex; justify-content: center; align-items: center; }
-        #flipbook { width: 1000px; height: 700px; }
-        .page { background: white; }
-        .page img { width: 100%; height: 100%; object-fit: contain; }
-        /* 제본선 그림자 */
-        .shadow { box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>교화연구</title>
+    <link rel="stylesheet" href="css/flipbook.skin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
-    <div id="viewport">
-        <div id="flipbook">
-            <div class="page shadow"><img src="pages/1.jpg"></div><div class="page shadow"><img src="pages/2.jpg"></div><div class="page shadow"><img src="pages/3.jpg"></div><div class="page shadow"><img src="pages/4.jpg"></div><div class="page shadow"><img src="pages/5.jpg"></div><div class="page shadow"><img src="pages/6.jpg"></div><div class="page shadow"><img src="pages/7.jpg"></div><div class="page shadow"><img src="pages/8.jpg"></div><div class="page shadow"><img src="pages/9.jpg"></div><div class="page shadow"><img src="pages/10.jpg"></div><div class="page shadow"><img src="pages/11.jpg"></div><div class="page shadow"><img src="pages/12.jpg"></div><div class="page shadow"><img src="pages/13.jpg"></div><div class="page shadow"><img src="pages/14.jpg"></div><div class="page shadow"><img src="pages/15.jpg"></div><div class="page shadow"><img src="pages/16.jpg"></div><div class="page shadow"><img src="pages/17.jpg"></div><div class="page shadow"><img src="pages/18.jpg"></div><div class="page shadow"><img src="pages/19.jpg"></div><div class="page shadow"><img src="pages/20.jpg"></div><div class="page shadow"><img src="pages/21.jpg"></div><div class="page shadow"><img src="pages/22.jpg"></div><div class="page shadow"><img src="pages/23.jpg"></div><div class="page shadow"><img src="pages/24.jpg"></div><div class="page shadow"><img src="pages/25.jpg"></div><div class="page shadow"><img src="pages/26.jpg"></div><div class="page shadow"><img src="pages/27.jpg"></div><div class="page shadow"><img src="pages/28.jpg"></div><div class="page shadow"><img src="pages/29.jpg"></div><div class="page shadow"><img src="pages/30.jpg"></div><div class="page shadow"><img src="pages/31.jpg"></div><div class="page shadow"><img src="pages/32.jpg"></div><div class="page shadow"><img src="pages/33.jpg"></div><div class="page shadow"><img src="pages/34.jpg"></div><div class="page shadow"><img src="pages/35.jpg"></div><div class="page shadow"><img src="pages/36.jpg"></div><div class="page shadow"><img src="pages/37.jpg"></div><div class="page shadow"><img src="pages/38.jpg"></div><div class="page shadow"><img src="pages/39.jpg"></div><div class="page shadow"><img src="pages/40.jpg"></div><div class="page shadow"><img src="pages/41.jpg"></div><div class="page shadow"><img src="pages/42.jpg"></div><div class="page shadow"><img src="pages/43.jpg"></div><div class="page shadow"><img src="pages/44.jpg"></div><div class="page shadow"><img src="pages/45.jpg"></div><div class="page shadow"><img src="pages/46.jpg"></div><div class="page shadow"><img src="pages/47.jpg"></div><div class="page shadow"><img src="pages/48.jpg"></div><div class="page shadow"><img src="pages/49.jpg"></div><div class="page shadow"><img src="pages/50.jpg"></div><div class="page shadow"><img src="pages/51.jpg"></div><div class="page shadow"><img src="pages/52.jpg"></div><div class="page shadow"><img src="pages/53.jpg"></div><div class="page shadow"><img src="pages/54.jpg"></div><div class="page shadow"><img src="pages/55.jpg"></div>
+<div id="top-progress-container">
+    <div id="top-progress-fill"></div>
+</div>
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>콘텐츠를 불러오는 중입니다...</p>
+</div>
+
+<!-- 모바일 전용 상단 바 (JS에서 상태 제어) -->
+<div id="mobile-header" class="mobile-ui"> 
+    <div class="m-header-left">
+        <span id="m-page-label" style="font-size: 14px; font-weight: bold; color: #00bcd4;">1 / 108</span>
+    </div>
+    <div class="m-header-right" style="display: flex; gap: 8px;">
+        <button id="m-btnThumb" class="util-btn">📋</button>
+        <button id="m-btnSound" class="util-btn">🔊</button>
+        <button id="m-btnHelp" class="util-btn">❓</button>
+    </div>
+</div>
+
+<div id="main-container">
+    
+    <div id="book-viewport">
+        <div id="book"></div>
+    </div>
+
+<div id="ui-footer">
+        <div class="ui-group mobile-hide">
+            <span id="page-label-spread">1 / 1</span>
+        </div>
+
+        <div class="ui-group main-controls">
+
+            <div class="slider-container">
+                <div id="slider-tooltip">1</div>
+                <input type="range" id="page-slider" min="1" max="1" value="1">
+            </div>
+            <button id="btnPrev" class="primary-btn">◀ <span class="mobile-hide">이전</span></button>
+            <button id="btnNext" class="primary-btn"><span class="mobile-hide">다음</span> ▶</button>
+            <div class="footer-utils mobile-hide">
+                <button id="btnZoomIn" class="util-btn" title="확대">🔍</button>
+                <button id="btnSound" class="util-btn" title="소리">🔊</button>
+                <button id="btnAnim" class="util-btn" title="효과">✨</button>
+                <button id="btnHelp" class="util-btn" title="도움말">❓</button>
+            </div>
+
+
+            
+            <div class="divider mobile-hide"></div>
+            <button id="thumb-toggle" class="menu-btn mobile-hide">전체 목차</button>
         </div>
     </div>
-    <script>
-        function loadApp() {
-            var flipbook = $('#flipbook');
-            var winW = $(window).width();
-            
-            // 모바일인지 PC인지 판별하여 레이아웃 조정
-            var displayMode = (winW < 600) ? 'single' : 'double';
-            
-            flipbook.turn({
-                width: $('#viewport').width(),
-                height: $('#viewport').height(),
-                elevation: 50,
-                acceleration: true,
-                gradients: true,
-                autoCenter: true,
-                display: displayMode // 가로가 좁은 폰에선 한장, 태블릿/PC에선 양면
-            });
-        }
+</div>
 
-        $(window).ready(loadApp);
-        
-        $(window).resize(function() {
-            var w = $('#viewport').width();
-            var h = $('#viewport').height();
-            $('#flipbook').turn('size', w, h);
-        });
-    </script>
+<!-- 도움말 모달 -->
+<div id="help-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>📖 플립북 사용 방법</h2>
+        <div class="help-section">
+            <h3>💻 PC 환경</h3>
+            <ul>
+                <li><strong>페이지 넘기기:</strong> 마우스 휠 또는 키보드 방향키</li>
+                <li><strong>화면 확대:</strong> [🔍] 버튼 클릭 또는 마우스 휠(일부 설정)</li>
+            </ul>
+        </div>
+        <div class="help-section">
+            <h3>📱 모바일 환경</h3>
+            <ul>
+                <li><strong>페이지 넘기기:</strong> 화면 좌우 터치 또는 스와이프</li>
+                <li><strong>메뉴 보이기:</strong> 화면 중앙을 가볍게 한 번 터치</li>
+                <li><strong>확대/축소:</strong> 두 손가락으로 벌리거나 오므리기(Pinch)</li>
+            </ul>
+        </div>
+        <button id="btnCloseHelp">확인</button>
+    </div>
+</div>
+
+<!-- 목차 패널 -->
+<div id="thumb-panel">
+    <div id="thumb-track"></div>
+    <div id="thumb-scroll-container">
+        <div id="thumb-scrollbar"></div>
+    </div>
+</div>
+
+    <script src="js/jquery.min.js"></script> 
+    <script src="js/turn.min.js"></script>
+    <script src="js/config.js"></script>      
+    <script src="js/zoom-pan.js"></script>    
+    <script src="js/flipbook.js"></script>
+<audio id="audio-flip" src="sounds/page-flip.mp3" preload="auto"></audio>
 </body>
 </html>
-    
