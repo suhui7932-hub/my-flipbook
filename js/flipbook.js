@@ -411,4 +411,5 @@ setTimeout(() => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(updateBookSize, 150);
   });
+
 });
