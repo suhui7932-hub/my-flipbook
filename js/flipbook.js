@@ -153,27 +153,21 @@ function loadPageImage(page) {
 $('img').on('dragstart', function() { return false; });
 
 function updateBookSize() {
+  // Safari의 유동적인 툴바를 고려하여 뷰포트 크기 측정
   const vW = $viewport.width();
   const vH = $viewport.height();
-  const winW = $(window).width();
-  const winH = $(window).height();
+  const winW = window.innerWidth; // jQuery 대신 네이티브 값 활용이 사파리에서 더 정확함
+  const winH = window.innerHeight;
   
-  // [1] 모바일/PC 통합 모드 판정 로직 강화
-  // 화면 가로폭이 세로보다 작으면(세로 모드) 무조건 1페이지(single)
-  // 가로가 세로보다 길고(가로 모드) 폭이 1000px 이상일 때만 2페이지(double)
-  let mode = "single";
-  if (winW > winH && winW >= 1000) {
-      mode = "double";
-  } else {
-      mode = "single";
-  }
+  // [모드 판정] 아이폰 세로(Portrait) 모드에서는 무조건 1페이지
+  // 가로(Landscape)이면서 충분히 넓은 경우에만 2페이지
+  let mode = (winW > winH && winW >= 1000) ? "double" : "single";
 
   const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  // [2] 화면 여백 설정 (책이 화면에 꽉 차게 조절)
-  // 모바일은 98%, PC는 92% 정도 사용하여 시각적 안정감 부여
-  const paddingFactor = (winW < 768) ? 0.98 : 0.92; 
+  // 여백 설정 (모바일은 최대한 화면을 넓게 사용)
+  const paddingFactor = (winW < winH) ? 0.98 : 0.92; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
 
@@ -184,32 +178,35 @@ function updateBookSize() {
       w = viewW; h = w / targetRatio;
   }
 
-  // [3] 중앙 정렬 및 크기 적용
   const finalW = Math.floor(w);
   const finalH = Math.floor(h);
 
   if ($book.data("done")) {
-      // 디스플레이 모드 실시간 변경
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
       $book.turn("size", finalW, finalH);
       
-      // turn.js 내부 중앙 정렬 함수 호출
-      $book.turn("center"); 
-  } else {
-      // 초기 로드 시 수동 중앙 정렬
+      // [중앙 정렬] absolute 배치를 통한 물리적 고정 (사파리 튕김 현상 방지)
       $book.css({
-          width: finalW,
-          height: finalH,
           position: 'absolute',
           left: '50%',
           top: '50%',
-          marginLeft: -(finalW / 2),
-          marginTop: -(finalH / 2)
+          marginLeft: -(finalW / 2) + 'px',
+          marginTop: -(finalH / 2) + 'px',
+          transition: 'none'
+      });
+      
+      $book.turn("center"); 
+  } else {
+      $book.css({
+          width: finalW, height: finalH,
+          position: 'absolute', left: '50%', top: '50%',
+          marginLeft: -(finalW / 2) + 'px', marginTop: -(finalH / 2) + 'px'
       });
   }
 }
+
   function buildThumbnails() {
     $track.empty();
     for (let i = 1; i <= info.totalPages; i += 2) {
