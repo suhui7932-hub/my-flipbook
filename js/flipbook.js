@@ -71,7 +71,12 @@ $(function () {
           // 확대 중이거나 UI 요소를 직접 클릭했을 때는 무시
           if (window.isZoomed && window.isZoomed()) return;
           if ($(e.target).closest("#mobile-header, button, #thumb-panel, .modal-content, .slider-container").length) return;
-
+          if (isMobile && !document.fullscreenElement) {
+            const docElm = document.documentElement;
+            if (docElm.requestFullscreen) docElm.requestFullscreen();
+            else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen(); // Safari/iOS 대응
+            else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+        }
           if (isMobile) {
               const $mobileUI = $("#mobile-header, #ui-footer");
               const isActive = $mobileUI.hasClass("active");
@@ -153,57 +158,44 @@ function loadPageImage(page) {
 $('img').on('dragstart', function() { return false; });
 
 function updateBookSize() {
-  // 브라우저 UI 요소를 제외한 순수 렌더링 영역 측정
-  const vW = $viewport.width();
-  const vH = $viewport.height();
-  
-  // 모바일 브라우저 대응을 위해 window 수치 추출
+  // [1] 가용 뷰포트 크기 측정 (주소창/툴바 제외한 순수 영역)
   const winW = window.innerWidth;
   const winH = window.innerHeight;
   
-  /**
-   * [강력한 모드 판정]
-   * 가로가 세로보다 확실히 길 때(winW > winH) 중에서도
-   * 화면 폭이 1000px를 넘는 'PC/태블릿 가로' 상태에서만 double(2페이지) 모드 적용
-   */
-  let mode = "single";
-  if (winW > winH && winW >= 1000) {
-      mode = "double";
-  } else {
-      // 그 외 모든 상황(스마트폰 세로, 좁은 가로 모드 등)은 무조건 single(1페이지)
-      mode = "single";
-  }
+  // [2] 메뉴(헤더/푸터)가 차지하는 공간(약 140px)을 수치에서 미리 제외
+  // 이렇게 하면 메뉴가 나타나도 책이 메뉴 아래로 깔리지 않습니다.
+// updateBookSize 함수 내 reservedHeight 계산 부분
+// 전체 화면 모드일 때는 메뉴 높이만 고려하여 여백을 더 줄입니다.
+  const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+  const reservedHeight = (winW < 1024) ? (isFS ? 100 : 140) : 100;
+  const availableWidth = winW * 0.96; // 좌우 여백 4%
+  const availableHeight = winH - reservedHeight;
 
-  const isDouble = (mode === "double");
-  const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
+  // [3] 모드 판정 (세로 모드 무조건 1페이지 고정)
+  let mode = (winW > winH && winW >= 1000) ? "double" : "single";
+  const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
 
-  // 모바일 세로 모드 가독성을 위해 여백을 최소화(0.99)하여 꽉 채움
-  const paddingFactor = (winW < winH) ? 0.99 : 0.94; 
-  const viewW = vW * paddingFactor;
-  const viewH = vH * paddingFactor;
-
+  // [4] 제외된 여백 안에서 최대 책 크기 계산
   let w, h;
-  if (viewW / viewH > targetRatio) {
-      h = viewH; w = h * targetRatio;
+  if (availableWidth / availableHeight > targetRatio) {
+      h = availableHeight; 
+      w = h * targetRatio;
   } else {
-      w = viewW; h = w / targetRatio;
+      w = availableWidth; 
+      h = w / targetRatio;
   }
 
   const finalW = Math.floor(w);
   const finalH = Math.floor(h);
 
+  // [5] 적용 및 정중앙 배치 (CSS 좌표 강제 고정)
   if ($book.data("done")) {
-      // 현재 적용된 모드와 계산된 모드가 다를 때만 실시간 전환
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
       $book.turn("size", finalW, finalH);
       
-      /**
-       * [중앙 정렬 강화]
-       * turn.js의 center 함수에만 의존하지 않고 
-       * CSS absolute 좌표를 이용해 화면 정중앙에 물리적으로 고정
-       */
+      // 물리적으로 화면 정중앙에 고정 (삼성 인터넷/사파리 공통 대응)
       $book.css({
           position: 'absolute',
           left: '50%',
@@ -215,15 +207,10 @@ function updateBookSize() {
       
       $book.turn("center"); 
   } else {
-      // 초기 로드 시 정중앙 배치
       $book.css({
-          width: finalW,
-          height: finalH,
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          marginLeft: -(finalW / 2) + 'px',
-          marginTop: -(finalH / 2) + 'px'
+          width: finalW, height: finalH,
+          position: 'absolute', left: '50%', top: '50%',
+          marginLeft: -(finalW / 2) + 'px', marginTop: -(finalH / 2) + 'px'
       });
   }
 }
@@ -281,7 +268,15 @@ function updateBookSize() {
     const maxBarLeft = $scrollContainer.width() - $scrollbar.width();
     $scrollbar.css("left", (currentPercent * maxBarLeft) + "px");
   }
-
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
   // ==========================================================================
   // 4. 플립북 초기화 및 로드
   // ==========================================================================
@@ -378,7 +373,48 @@ setTimeout(() => {
         duration: isAnimEnabled ? cfg.flip.duration : 200, gradients: isAnimEnabled
     });
   });
+  $("#m-btnFull").on("click", function(e) {
+    e.stopPropagation();
+    toggleFullScreen();
+});
+function toggleFullScreen() {
+  if (!document.fullscreenElement && 
+      !document.webkitFullscreenElement && 
+      !document.msFullscreenElement) {
+      // 전체 화면 진입
+      const docElm = document.documentElement;
+      if (docElm.requestFullscreen) docElm.requestFullscreen();
+      else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+      else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+      
+      $("#m-btnFull").text("❌"); // 닫기 아이콘으로 변경
+  } else {
+      // 전체 화면 해제
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+      
+      $("#m-btnFull").text("⛶"); // 기본 아이콘으로 복구
+  }
+}
 
+// 브라우저의 'ESC'키 등으로 전체화면이 해제될 때 아이콘 동기화
+document.addEventListener("fullscreenchange", handleFSChange);
+document.addEventListener("webkitfullscreenchange", handleFSChange);
+document.addEventListener("msfullscreenchange", handleFSChange);
+// 초기 로드 시 실행
+if (isMobile && !document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) {
+  $("#m-btnFull").hide(); // 전체 화면을 지원하지 않는 브라우저(일부 iOS)에서 버튼 숨김
+}
+function handleFSChange() {
+  const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+  $("#m-btnFull").text(isFS ? "❌" : "⛶");
+  
+  // 전체 화면 상태가 바뀔 때 책 크기를 재계산하여 레이아웃 깨짐 방지
+  if (typeof updateBookSize === "function") {
+      setTimeout(updateBookSize, 150);
+  }
+}
   $("#thumb-toggle").on("click", (e) => {
     e.stopPropagation();
     $("#thumb-panel").toggleClass("open");
