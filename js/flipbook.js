@@ -151,28 +151,41 @@ function loadPageImage(page) {
     }
 }
 $('img').on('dragstart', function() { return false; });
-  function updateBookSize() {
-    const vW = $viewport.width() * 0.94;
-    const vH = $viewport.height() * 0.94;
-    const isDouble = $(window).width() >= 1024 || $(window).width() > $(window).height();
-    const mode = isDouble ? "double" : "single";
-    const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-    let w, h;
-    if (vW / vH > targetRatio) {
-        h = vH; w = h * targetRatio;
-    } else {
-        w = vW; h = w / targetRatio;
-    }
+function updateBookSize() {
+  const vW = $viewport.width();
+  const vH = $viewport.height();
+  
+  // [중요] 모바일 자동 변환 로직
+  // 가로가 세로보다 길고, 화면 폭이 1024px 이상일 때만 'double' 모드 적용
+  // 일반적인 스마트폰 세로 화면은 자동으로 'single' 모드가 됩니다.
+  const isDouble = $(window).width() > $(window).height() && $(window).width() >= 1024;
+  const mode = isDouble ? "double" : "single"; 
+  const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-    if ($book.data("done")) {
-        if ($book.turn("display") !== mode) $book.turn("display", mode);
-        $book.turn("size", Math.floor(w), Math.floor(h));
-        $book.turn("center"); // 중앙 정렬 강제 호출
-    } else {
-        $book.css({ width: Math.floor(w), height: Math.floor(h), marginTop: 0 });
-    }
+  let w, h;
+  // 뷰포트 대비 책의 크기 결정 (여백 조절: 0.94 -> 0.98로 키우면 더 꽉 참)
+  const paddingFactor = 0.96; 
+  const viewW = vW * paddingFactor;
+  const viewH = vH * paddingFactor;
+
+  if (viewW / viewH > targetRatio) {
+      h = viewH; w = h * targetRatio;
+  } else {
+      w = viewW; h = w / targetRatio;
   }
+
+  if ($book.data("done")) {
+      // [핵심] 현재 모드와 계산된 모드가 다를 경우 실시간 전환
+      if ($book.turn("display") !== mode) {
+          $book.turn("display", mode);
+      }
+      $book.turn("size", Math.floor(w), Math.floor(h));
+      $book.turn("center"); 
+  } else {
+      $book.css({ width: Math.floor(w), height: Math.floor(h), marginTop: 0 });
+  }
+}
 
   function buildThumbnails() {
     $track.empty();
@@ -411,5 +424,4 @@ setTimeout(() => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(updateBookSize, 150);
   });
-
 });
