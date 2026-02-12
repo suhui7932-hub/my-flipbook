@@ -32,7 +32,9 @@ body {
     align-items: center;     
     background: #121213; 
     overflow: hidden; 
-    padding-bottom: 0;
+
+    /* 핵심 수정: 푸터 높이(65px~70px)만큼 바닥 여백을 추가하여 겹침 방지 */
+    padding-bottom: 70px; 
     box-sizing: border-box; /* 패딩이 전체 높이에 포함되도록 설정 */
 }
 
@@ -207,8 +209,11 @@ body.dragging {
         opacity: 1 !important;
     }
     #book-viewport {
-        /* 모바일 푸터 높이와 Safe Area를 고려한 여백 */
-        padding-bottom: calc(75px + env(safe-area-inset-bottom));
+        padding-bottom: 0 !important;
+        height: 100vh !important; /* 브라우저 높이에 꽉 차게 설정 */
+        width: 100vw !important;
+        overflow: hidden;
+        position: relative;
     }
     /* index.html의 모바일 헤더 ID에 대한 초기 설정 */
     #mobile-header {
@@ -234,13 +239,23 @@ body.dragging {
         opacity: 1 !important;
         pointer-events: auto !important; /* 활성화 시 버튼 클릭 가능 */
     }
+    .m-header-right {
+        display: flex !important;
+        gap: 4px !important; /* 기존 8px에서 4px로 줄여 겹침 방지 */
+        align-items: center;
+    }
+
+    /* 모바일 버튼 크기 및 폰트 미세 조정 */
     .m-header-right .util-btn {
-        width: 35px;
-        height: 35px;
-        padding: 0;
-        font-size: 16px;
-        background: #2c2c2e;
-        border: 1px solid #444;
+        width: 32px !important;  /* 기존 35px에서 조금 더 축소 */
+        height: 32px !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+    }
+
+    /* 페이지 번호가 왼쪽 버튼에 너무 붙지 않게 조정 */
+    .m-header-left {
+        padding-left: 5px;
     }
     #main-container {
         position: relative;
@@ -250,6 +265,7 @@ body.dragging {
     #page-slider {
         height: 30px;
     }
+    
 /* 2. 푸터 위치 설정 */
     #ui-footer {
         display: flex;
