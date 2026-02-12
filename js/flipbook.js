@@ -153,29 +153,31 @@ function loadPageImage(page) {
 $('img').on('dragstart', function() { return false; });
 
 function updateBookSize() {
+  // 브라우저 UI 요소를 제외한 순수 렌더링 영역 측정
   const vW = $viewport.width();
   const vH = $viewport.height();
   
-  // Safari, 삼성 인터넷, 크롬 모두에서 가장 정확한 윈도우 수치 추출
+  // 모바일 브라우저 대응을 위해 window 수치 추출
   const winW = window.innerWidth;
   const winH = window.innerHeight;
   
-  // [강력한 판정 로직]
-  // 1. 화면이 세로로 길면(winW < winH) 이유 불문 무조건 1페이지(single)
-  // 2. 가로로 돌렸을 때(winW > winH) 중에서 화면이 아주 넓은 경우만 2페이지(double)
+  /**
+   * [강력한 모드 판정]
+   * 가로가 세로보다 확실히 길 때(winW > winH) 중에서도
+   * 화면 폭이 1000px를 넘는 'PC/태블릿 가로' 상태에서만 double(2페이지) 모드 적용
+   */
   let mode = "single";
-  if (winW > winH) {
-      // 가로 모드일 때, 태블릿 급(1000px 이상)인 경우만 2페이지 허용
-      mode = (winW >= 1000) ? "double" : "single";
+  if (winW > winH && winW >= 1000) {
+      mode = "double";
   } else {
-      // 세로 모드면 해상도 상관없이 무조건 1페이지
+      // 그 외 모든 상황(스마트폰 세로, 좁은 가로 모드 등)은 무조건 single(1페이지)
       mode = "single";
   }
 
   const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  // 모바일 세로 모드 가독성을 위해 여백 최소화 (0.99)
+  // 모바일 세로 모드 가독성을 위해 여백을 최소화(0.99)하여 꽉 채움
   const paddingFactor = (winW < winH) ? 0.99 : 0.94; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
@@ -191,12 +193,17 @@ function updateBookSize() {
   const finalH = Math.floor(h);
 
   if ($book.data("done")) {
+      // 현재 적용된 모드와 계산된 모드가 다를 때만 실시간 전환
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
       $book.turn("size", finalW, finalH);
       
-      // 물리적 중앙 정렬 강제 적용 (삼성 인터넷 주소창 대응)
+      /**
+       * [중앙 정렬 강화]
+       * turn.js의 center 함수에만 의존하지 않고 
+       * CSS absolute 좌표를 이용해 화면 정중앙에 물리적으로 고정
+       */
       $book.css({
           position: 'absolute',
           left: '50%',
@@ -208,10 +215,15 @@ function updateBookSize() {
       
       $book.turn("center"); 
   } else {
+      // 초기 로드 시 정중앙 배치
       $book.css({
-          width: finalW, height: finalH,
-          position: 'absolute', left: '50%', top: '50%',
-          marginLeft: -(finalW / 2) + 'px', marginTop: -(finalH / 2) + 'px'
+          width: finalW,
+          height: finalH,
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          marginLeft: -(finalW / 2) + 'px',
+          marginTop: -(finalH / 2) + 'px'
       });
   }
 }
