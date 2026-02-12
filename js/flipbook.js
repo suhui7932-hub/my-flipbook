@@ -153,21 +153,27 @@ function loadPageImage(page) {
 $('img').on('dragstart', function() { return false; });
 
 function updateBookSize() {
-  // Safari의 유동적인 툴바를 고려하여 뷰포트 크기 측정
   const vW = $viewport.width();
   const vH = $viewport.height();
-  const winW = window.innerWidth; // jQuery 대신 네이티브 값 활용이 사파리에서 더 정확함
+  // Safari 및 삼성 인터넷의 가변 UI를 대응하기 위해 inner 수치 활용
+  const winW = window.innerWidth;
   const winH = window.innerHeight;
   
-  // [모드 판정] 아이폰 세로(Portrait) 모드에서는 무조건 1페이지
-  // 가로(Landscape)이면서 충분히 넓은 경우에만 2페이지
-  let mode = (winW > winH && winW >= 1000) ? "double" : "single";
+  // [1] 모바일 1페이지 고정 로직 강화
+  // 스마트폰(isMobile)이거나 화면이 세로로 길면(winW < winH) 무조건 1페이지(single)
+  // 가로 모드이면서 폭이 충분히 넓은(1100px 이상) 태블릿/PC 환경에서만 2페이지
+  let mode = "single";
+  if (winW > winH && winW >= 1100) {
+      mode = "double";
+  } else {
+      mode = "single"; // 세로 모드 및 일반 스마트폰은 무조건 1페이지
+  }
 
   const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  // 여백 설정 (모바일은 최대한 화면을 넓게 사용)
-  const paddingFactor = (winW < winH) ? 0.98 : 0.92; 
+  // [2] 여백 설정: 모바일일 때는 화면 끝까지 꽉 차게(0.99)
+  const paddingFactor = (winW < winH) ? 0.99 : 0.94; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
 
@@ -181,13 +187,14 @@ function updateBookSize() {
   const finalW = Math.floor(w);
   const finalH = Math.floor(h);
 
+  // [3] turn.js 적용 및 물리적 중앙 정렬 강제 (삼성/사파리 공통)
   if ($book.data("done")) {
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
       $book.turn("size", finalW, finalH);
       
-      // [중앙 정렬] absolute 배치를 통한 물리적 고정 (사파리 튕김 현상 방지)
+      // CSS를 이용해 화면 정중앙에 강제 배치
       $book.css({
           position: 'absolute',
           left: '50%',
