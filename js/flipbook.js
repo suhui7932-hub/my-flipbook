@@ -104,33 +104,49 @@ $(function () {
     const winW = window.innerWidth;
     const winH = window.innerHeight;
     
-    let mode = (winW < 768) ? "single" : (winW > winH ? "double" : "single");
+    // [폴드6 맞춤 교정] 
+    // 1. 너비가 600px 미만: 일반 바형 스마트폰 (아이폰 16 PM, S25 Ultra 등) -> 무조건 1페이지
+    // 2. 너비가 600px 이상: 폴드6 펼침 화면, 태블릿, PC -> 가로가 더 길 때만 2페이지
+    let mode;
+    if (winW < 600) {
+        mode = "single";
+    } else {
+        mode = (winW > winH) ? "double" : "single";
+    }
     
     const vW = winW * 0.92;
     const vH = winH - (isMobile ? 120 : 160);
     const targetRatio = (mode === "double") ? imgRatio * 2 : imgRatio;
-
+  
     let w, h;
     if (vW / vH > targetRatio) {
-      h = vH; w = h * targetRatio;
+        h = vH; w = h * targetRatio;
     } else {
-      w = vW; h = w / targetRatio;
+        w = vW; h = w / targetRatio;
     }
-
+  
     const finalW = Math.floor(w);
     const finalH = Math.floor(h);
-
+  
     if ($book.data("done")) {
-      if ($book.turn("display") !== mode) $book.turn("display", mode);
-      $book.turn("size", finalW, finalH);
-      $book.css({
-        left: '50%', top: '48%',
-        marginLeft: -(finalW / 2) + "px",
-        marginTop: -(finalH / 2) + "px"
-      });
-      $book.turn("center");
+        $book.turn("stop"); 
+        
+        if ($book.turn("display") !== mode) {
+            $book.turn("display", mode);
+        }
+        
+        $book.turn("size", finalW, finalH);
+        
+        $book.css({
+            left: '50%',
+            top: '48%',
+            marginLeft: -(finalW / 2) + "px", // 오타 교정 완료
+            marginTop: -(finalH / 2) + "px"
+        });
+        
+        setTimeout(() => { $book.turn("center"); }, 10);
     } else {
-      $book.css({ width: finalW, height: finalH });
+        $book.css({ width: finalW, height: finalH });
     }
   }
 
