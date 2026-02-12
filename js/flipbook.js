@@ -158,43 +158,58 @@ function updateBookSize() {
   const winW = $(window).width();
   const winH = $(window).height();
   
-  // [수정] 판정 로직 강화
-  // 1. 모바일 기기 체크(isMobile)가 true이면서 세로 모드(winW < winH)이면 무조건 single
-  // 2. 그 외 PC나 태블릿 가로 모드(winW > winH)이면서 폭이 충분할 때만 double
+  // [1] 모바일/PC 통합 모드 판정 로직 강화
+  // 화면 가로폭이 세로보다 작으면(세로 모드) 무조건 1페이지(single)
+  // 가로가 세로보다 길고(가로 모드) 폭이 1000px 이상일 때만 2페이지(double)
   let mode = "single";
-  if (isMobile) {
-      mode = (winW > winH) ? "double" : "single";
+  if (winW > winH && winW >= 1000) {
+      mode = "double";
   } else {
-      mode = (winW > 1024 && winW > winH) ? "double" : "single";
+      mode = "single";
   }
 
   const isDouble = (mode === "double");
   const targetRatio = isDouble ? imgRatio * 2 : imgRatio;
 
-  let w, h;
-  // 모바일에서 더 꽉 차게 보이도록 패딩 조절 (0.96 -> 0.98)
-  const paddingFactor = isMobile ? 0.98 : 0.95; 
+  // [2] 화면 여백 설정 (책이 화면에 꽉 차게 조절)
+  // 모바일은 98%, PC는 92% 정도 사용하여 시각적 안정감 부여
+  const paddingFactor = (winW < 768) ? 0.98 : 0.92; 
   const viewW = vW * paddingFactor;
   const viewH = vH * paddingFactor;
 
+  let w, h;
   if (viewW / viewH > targetRatio) {
       h = viewH; w = h * targetRatio;
   } else {
       w = viewW; h = w / targetRatio;
   }
 
+  // [3] 중앙 정렬 및 크기 적용
+  const finalW = Math.floor(w);
+  const finalH = Math.floor(h);
+
   if ($book.data("done")) {
-      // 현재 적용된 모드와 계산된 모드가 다를 때만 실시간 전환
+      // 디스플레이 모드 실시간 변경
       if ($book.turn("display") !== mode) {
           $book.turn("display", mode);
       }
-      $book.turn("size", Math.floor(w), Math.floor(h));
+      $book.turn("size", finalW, finalH);
+      
+      // turn.js 내부 중앙 정렬 함수 호출
       $book.turn("center"); 
   } else {
-      $book.css({ width: Math.floor(w), height: Math.floor(h), marginTop: 0 });
+      // 초기 로드 시 수동 중앙 정렬
+      $book.css({
+          width: finalW,
+          height: finalH,
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          marginLeft: -(finalW / 2),
+          marginTop: -(finalH / 2)
+      });
   }
 }
-
   function buildThumbnails() {
     $track.empty();
     for (let i = 1; i <= info.totalPages; i += 2) {
