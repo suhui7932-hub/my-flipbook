@@ -1,0 +1,299 @@
+/* --- 1. 기본 초기화 및 변수 --- */
+:root {
+    --vh: 1vh;
+}
+
+body { 
+    margin: 0; padding: 0; background: #1a1a1b; overflow: hidden; 
+    font-family: 'Noto Sans KR', sans-serif; user-select: none; color: #e2e2e2; 
+}
+
+#main-container { 
+    display: flex; flex-direction: column; 
+    width: 100vw; height: 100vh; 
+    height: calc(var(--vh, 1vh) * 100); /* 주소창 제외 실제 높이 대응 */
+}
+
+/* --- 2. 메인 뷰포트 및 책(Turn.js) 설정 --- */
+#book-viewport { 
+    flex: 1; position: relative; display: flex;
+    justify-content: center; align-items: center;
+    background: #121213; overflow: hidden; touch-action: none;
+}
+
+#book {
+    margin: 0 auto !important; display: block !important; visibility: visible !important;
+    touch-action: none; -webkit-user-drag: none; user-select: none;
+    will-change: transform; image-rendering: -webkit-optimize-contrast; transform-origin: center center;
+}
+
+#book:not(.zoomed) { cursor: grab; }
+#book:active { cursor: grabbing; }
+
+#book img { -webkit-user-drag: none; user-select: none; -webkit-tap-highlight-color: transparent; pointer-events: none; }
+#book .page { background-color: #fff; width: 100%; height: 100%; touch-action: none; }
+
+/* --- 3. 하단 UI 푸터 및 컨트롤 (반투명 및 숨김 효과 포함) --- */
+#ui-footer { 
+    height: calc(65px + env(safe-area-inset-bottom)); 
+    background: rgba(28, 28, 30, 0.75) !important; /* 반투명 블랙 */
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 0 20px env(safe-area-inset-bottom) 20px; border-top: 1px solid #333; z-index: 2000;
+    backdrop-filter: blur(10px); /* 배경 블러 처리 */
+    -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease; /* 부드러운 나타남/사라짐 */
+}
+
+/* 푸터가 숨겨질 때의 상태 */
+#ui-footer.hidden {
+    opacity: 0;
+    pointer-events: none; /* 숨겨졌을 때는 클릭 차단 */
+    transform: translateY(20px); /* 살짝 아래로 내려가며 사라짐 */
+}
+
+.ui-group { display: flex; align-items: center; gap: 8px; }
+
+/* 공통 버튼 스타일 */
+button, .menu-btn { 
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; padding: 0 14px; margin: 0;
+    border: 1px solid #3a3a3c; border-radius: 6px;
+    background: #2c2c2e; color: #fff;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
+    line-height: 1; cursor: pointer; transition: all 0.2s ease-in-out;
+    -webkit-font-smoothing: antialiased; transform: translateZ(0);
+    position: relative; touch-action: manipulation !important; outline: none;
+}
+/* 터치 영역 확장 */
+button::after { content: ''; position: absolute; top: -5px; bottom: -5px; left: -5px; right: -5px; }
+button:hover { background: #00bcd4; border-color: #00bcd4; color: #000; }
+
+.util-btn { width: 36px; min-width: 36px; padding: 0; }
+
+/* 페이지 점프 박스 (입력창 그룹) */
+.page-jump-box {
+    display: flex; align-items: center; height: 32px;
+    background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 6px; padding: 0 8px;
+}
+
+#page-input {
+    width: 35px !important; background: transparent; border: none;
+    color: #00bcd4; text-align: center; font-size: 13px; font-weight: bold; outline: none;
+}
+#page-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.page-total-count { font-size: 12px; color: #888; margin-left: 4px; white-space: nowrap; }
+#page-label-spread { font-size: 13px; min-width: 70px; text-align: center; color: #888; }
+
+/* --- 4. 슬라이더 및 툴팁 --- */
+.slider-container { position: relative; width: 50%; margin: 0 15px; }
+
+#page-slider { width: 100%; -webkit-appearance: none; background: transparent; height: 20px; outline: none; }
+#page-slider::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #444; border-radius: 1px; }
+#page-slider::-webkit-slider-thumb { 
+    -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; 
+    background: #00bcd4; margin-top: -6px; border: 2px solid #1c1c1e; 
+    box-shadow: 0 0 5px rgba(0,188,212,0.5); 
+}
+
+#slider-tooltip {
+    position: absolute; top: -40px; transform: translateX(-50%);
+    background: #3b82f6; color: #000; padding: 4px 10px; border-radius: 4px;
+    font-size: 12px; font-weight: bold; white-space: nowrap;
+    opacity: 0; transition: opacity 0.3s ease, left 0.1s ease-out;
+    pointer-events: none; z-index: 3000;
+}
+#slider-tooltip.show { opacity: 1; }
+#slider-tooltip::after {
+    content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #3b82f6;
+}
+
+/* --- 5. 목차(썸네일) 패널 --- */
+#thumb-panel {
+    position: fixed; bottom: -280px; left: 0; width: 100%; height: 130px;
+    background: rgba(15, 15, 17, 0.95); backdrop-filter: blur(15px);
+    transition: bottom 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+    z-index: 5000; display: flex; flex-direction: column;
+}
+#thumb-panel.open { bottom: calc(65px + env(safe-area-inset-bottom)) !important; }
+
+/* 패널 활성화 시 뒷배경 차단 레이어 */
+#thumb-panel.open::before {
+    content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: transparent; z-index: -1;
+}
+
+#thumb-track { 
+    flex: 1; display: flex; flex-wrap: nowrap; align-items: center;
+    padding: 20px 40px; gap: 15px; overflow-x: auto;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x;
+}
+#thumb-track::-webkit-scrollbar { display: none; }
+
+#thumb-scroll-container {
+    position: absolute; bottom: 10px; left: 40px; right: 40px;
+    height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px;
+}
+
+#thumb-scrollbar {
+    position: absolute; top: -3px; width: 50px; height: 10px;
+    background: #00bcd4; border-radius: 5px; cursor: grab;
+    user-select: none; touch-action: none; z-index: 10000;
+}
+#thumb-scrollbar.dragging { cursor: grabbing !important; background: #fff !important; transform: scaleY(1.5); }
+
+.thumb-item { flex: 0 0 calc(10% - 15px); min-width: 50px; cursor: pointer; text-align: center; }
+.thumb-img-container { position: relative; border-radius: 4px; overflow: hidden; border: 2px solid #333; transition: 0.2s; height: 80px; }
+.thumb-overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: #fff; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none;
+}
+.thumb-item.active .thumb-img-container { border-color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.5); }
+.thumb-item.active .thumb-overlay { color: #00bcd4; font-size: 18px; }
+.thumb-item img { width: 100%; height: 160px; display: block; filter: brightness(0.8); object-fit: cover; object-position: top; }
+
+/* --- 6. 모달 및 로딩 --- */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9000; justify-content: center; align-items: center; }
+.modal-overlay.open { display: flex; }
+.modal-content { background: #2c2c2e; padding: 30px; border-radius: 12px; max-width: 90%; color: #fff; }
+
+#loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; color: #00bcd4; }
+.spinner { width: 30px; height: 30px; border: 3px solid rgba(0,188,212, 0.2); border-top: 3px solid #00bcd4; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* 도움말 모달 내부 가독성 향상 */
+.modal-content {
+    max-width: 450px !important;
+    line-height: 1.6;
+}
+
+.help-section h3 {
+    font-size: 15px;
+    color: #00bcd4;
+    margin: 15px 0 8px 0;
+    border-bottom: 1px solid #3a3a3c;
+    padding-bottom: 5px;
+}
+
+.help-section ul {
+    padding-left: 18px;
+    margin: 0;
+}
+
+.help-section li {
+    font-size: 13px;
+    color: #e2e2e2;
+    margin-bottom: 5px;
+}
+
+/* 팁 박스 디자인 */
+.info-box {
+    background: rgba(44, 44, 46, 0.8);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed #00bcd4;
+    margin-top: 20px;
+}
+
+.info-box p {
+    color: #00bcd4;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.info-box li {
+    font-size: 12px;
+    color: #bbb;
+    list-style-type: '✔ ';
+}
+
+#btnCloseHelp {
+    width: 100%;
+    margin-top: 20px;
+    background: #00bcd4;
+    color: #000;
+    font-weight: bold;
+}
+/* --- 7. 반응형 레이아웃 및 기기별 최적화 --- */
+
+/* [핵심] 1024px ~ 1150px 구간 깨짐 방지 */
+@media (min-width: 1024px) and (max-width: 1150px) {
+    .slider-container { width: 30% !important; margin: 0 10px !important; }
+    .ui-group { gap: 4px !important; }
+    button { padding: 0 8px !important; }
+}
+
+/* PC 전용 (1024px 이상) */
+@media (min-width: 1024px) {
+    #page-input, .page-total-count { display: none !important; }
+}
+
+/* 모바일 전용 (1023px 이하) */
+@media (max-width: 1023px) {
+    #ui-footer { 
+        flex-direction: row !important; 
+        justify-content: space-between; 
+        padding: 0 10px env(safe-area-inset-bottom) 10px !important; 
+        height: 50px !important; 
+    }
+    .pc-only, .mobile-hide, #page-label-spread, #ui-footer .divider, .slider-container { display: none !important; }
+    
+    #page-input { display: inline-block !important; }
+    .page-jump-box { margin-right: 5px; }
+
+    .main-controls { width: auto !important; display: flex; gap: 6px !important; align-items: center; }
+    #ui-footer button { height: 34px !important; padding: 0 10px !important; font-size: 13px !important; }
+
+    /* 목차 버튼 아이콘화 */
+    #thumb-toggle { min-width: 44px !important; height: 34px !important; padding: 0 !important; font-size: 0 !important; text-indent: -9999px !important; overflow: hidden !important; }
+    #thumb-toggle::before { content: '▤'; font-size: 20px; color: #fff; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-indent: 0; }
+
+    .primary-btn span { display: none !important; }
+    #thumb-panel { height: 150px !important; bottom: -200px !important; }
+    #thumb-panel.open { bottom: calc(50px + env(safe-area-inset-bottom)) !important; border-radius: 15px 15px 0 0; }
+}
+/* [추가] 363px 이하 초소형 화면 최적화 */
+@media (max-width: 363px) {
+    /* 푸터 높이 조절 및 간격 축소 */
+    #ui-footer {
+        height: 48px !important;
+        padding: 0 8px env(safe-area-inset-bottom) 8px !important;
+    }
+
+    /* 버튼 크기 및 간격 축소 */
+    .ui-group { gap: 4px !important; }
+    
+    button, .menu-btn {
+        height: 30px !important;
+        padding: 0 6px !important;
+        font-size: 11px !important;
+    }
+
+    /* 페이지 입력창 크기 최소화 */
+    .page-jump-box { padding: 0 4px !important; }
+    #page-input { width: 25px !important; font-size: 11px !important; }
+
+    /* 유틸리티 버튼(소리, 효과 등) 중 일부 숨김 (필요 시) */
+    #btnAnim { display: none !important; } 
+
+    /* 도움말 모달 크기 최적화 */
+    .modal-content {
+        padding: 15px !important;
+        width: 85% !important;
+    }
+    .modal-content h2 { font-size: 18px !important; margin-bottom: 10px !important; }
+    .help-section h3 { font-size: 13px !important; }
+    .help-section li { font-size: 11px !important; line-height: 1.5 !important; }
+}
+/* 글로벌 설정 */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* 터치 및 확대 방지 로직 통합 */
+#ui-footer, #ui-footer *, #thumb-toggle, #thumb-panel, #help-modal, .modal-content, #page-slider {
+    touch-action: manipulation !important; /* 브라우저 기본 더블탭 줌 차단 */
+    -webkit-user-select: none; 
+    user-select: none;
+}
